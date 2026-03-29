@@ -170,6 +170,66 @@ const ProjectPage = () => {
     }
   };
 
+  const handleGenerate = async () => {
+    if (messages.length < 4) {
+      toast({ title: "Continue conversando", description: "A IA precisa de mais contexto para gerar o PRD. Continue descrevendo seu projeto no chat!" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const historyMessages = messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const projectContext = {
+        prd: project?.prd_content || "",
+        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
+        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+      };
+
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: historyMessages,
+          projectContext,
+          projectId: id,
+          userId: user!.id,
+          action: "generate",
+        }),
+      });
+
+      if (!resp.ok) throw new Error("Failed to generate");
+
+      const result = await resp.json();
+      const savedItems: string[] = [];
+      if (result.saved?.prd) savedItems.push("PRD");
+      if (result.saved?.tasks) savedItems.push("Tarefas");
+      if (result.saved?.prompts) savedItems.push("Prompts");
+
+      // Invalidate all queries
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+
+      if (savedItems.length > 0) {
+        toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
+        // Save a system message about the generation
+        await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}` });
+        queryClient.invalidateQueries({ queryKey: ["messages", id] });
+      } else {
+        toast({ title: "Aviso", description: "A IA não conseguiu gerar os documentos. Tente dar mais detalhes no chat.", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Generate error:", err);
+      toast({ title: "Erro", description: "Falha ao gerar documentos. Tente novamente.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
     { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "prd", icon: FileText, label: "PRD" },
