@@ -11,7 +11,7 @@ interface PRDViewProps {
   isRegenerating?: boolean;
 }
 
-const PRDView = ({ projectId, prdContent }: PRDViewProps) => {
+const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDViewProps) => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(prdContent || "");
