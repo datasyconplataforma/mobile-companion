@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckSquare, Circle, CheckCircle2, Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { CheckSquare, Circle, CheckCircle2, Clock, Loader2, Plus, Trash2 } from "lucide-react";
 
 interface TaskListProps {
   projectId: string;
@@ -10,13 +10,13 @@ interface TaskListProps {
 
 const statusIcons = {
   todo: Circle,
-  in_progress: Loader2,
+  in_progress: Clock,
   done: CheckCircle2,
 };
 
 const statusStyles = {
-  todo: "text-muted-foreground",
-  in_progress: "text-yellow-400 animate-spin",
+  todo: "text-muted-foreground hover:text-foreground",
+  in_progress: "text-yellow-400",
   done: "text-primary",
 };
 
