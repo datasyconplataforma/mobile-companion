@@ -385,6 +385,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <ConsistencyCheck projectId={id!} />
         <LLMSettings projectId={id!} />
         <button
           onClick={handleGenerate}
