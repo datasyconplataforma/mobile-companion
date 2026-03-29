@@ -148,6 +148,8 @@ const ProjectPage = () => {
     documents: documents
       .filter((d) => d.extracted_text)
       .map((d) => ({ name: d.file_name, content: d.extracted_text })),
+    skills: skills.map((s: any) => s.name),
+    businessRules: businessRules?.content || "",
   });
 
   const handleDeleteMessage = async (messageId: string) => {
