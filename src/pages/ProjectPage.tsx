@@ -91,11 +91,86 @@ const ProjectPage = () => {
     },
   });
 
+  const isGenerateRequest = (text: string): boolean => {
+    const lower = text.toLowerCase();
+    const keywords = ["gere", "gerar", "crie", "criar", "monte", "montar", "atualize", "atualizar", "faça", "fazer"];
+    const targets = ["prd", "tarefas", "tarefa", "checklist", "prompts", "prompt", "documento", "plano"];
+    return keywords.some((k) => lower.includes(k)) && targets.some((t) => lower.includes(t));
+  };
+
+  const buildContext = () => ({
+    prd: project?.prd_content || "",
+    tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
+    prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+  });
+
   const handleSend = async (content: string) => {
     // Save user message
     await saveMessage.mutateAsync({ role: "user", content });
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
 
+    const shouldGenerate = isGenerateRequest(content);
+
+    if (shouldGenerate) {
+      // Use generate action (non-streaming with tool calling)
+      setIsLoading(true);
+      try {
+        const historyMessages = [
+          ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          { role: "user" as const, content },
+        ];
+
+        const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+        const resp = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            messages: historyMessages,
+            projectContext: buildContext(),
+            projectId: id,
+            userId: user!.id,
+            action: "generate",
+          }),
+        });
+
+        if (!resp.ok) throw new Error("Failed to generate");
+
+        const result = await resp.json();
+        const savedItems: string[] = [];
+        if (result.saved?.prd) savedItems.push("PRD");
+        if (result.saved?.tasks) savedItems.push("Tarefas");
+        if (result.saved?.prompts) savedItems.push("Prompts");
+
+        queryClient.invalidateQueries({ queryKey: ["project", id] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+        queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+
+        let replyContent = "";
+        if (savedItems.length > 0) {
+          replyContent = `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!`;
+          toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos.` });
+        } else {
+          replyContent = result.content || "Preciso de mais detalhes para gerar. Continue descrevendo seu projeto!";
+        }
+        if (result.content && savedItems.length > 0) {
+          replyContent += "\n\n" + result.content;
+        }
+
+        await saveMessage.mutateAsync({ role: "assistant", content: replyContent });
+        queryClient.invalidateQueries({ queryKey: ["messages", id] });
+      } catch (err) {
+        console.error("Generate error:", err);
+        toast({ title: "Erro", description: "Falha ao gerar. Tente novamente.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Default: streaming chat
     setIsLoading(true);
     setStreamingContent("");
 
@@ -105,12 +180,6 @@ const ProjectPage = () => {
         { role: "user" as const, content },
       ];
 
-      const projectContext = {
-        prd: project?.prd_content || "",
-        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
-        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
-      };
-
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -118,7 +187,7 @@ const ProjectPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: historyMessages, projectContext }),
+        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext() }),
       });
 
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
