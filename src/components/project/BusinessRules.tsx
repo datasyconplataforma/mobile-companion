@@ -305,6 +305,14 @@ Responda APENAS com as regras numeradas, sem introdução.`,
               rows={2}
             />
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={handleImproveWithAI}
+                disabled={isGenerating}
+                className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
+                title="Melhorar com IA"
+              >
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              </button>
               <button onClick={handleAdd} className="p-1.5 rounded-lg hover:bg-primary/20 text-primary transition-all">
                 <Check size={14} />
               </button>
