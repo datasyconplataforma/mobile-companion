@@ -125,17 +125,36 @@ const PromptList = ({ projectId }: PromptListProps) => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-      <div className="max-w-lg mx-auto">
-        {prompts.length === 0 && !showAdd ? (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sub-tabs */}
+      <div className="shrink-0 flex border-b border-border bg-card/30 px-4">
+        {promptTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => { setActivePromptTab(tab.key); resetForm(); }}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
+              activePromptTab === tab.key
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`}
+          >
+            <tab.icon size={13} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+        <div className="max-w-lg mx-auto">
+        {filteredPrompts.length === 0 && !showAdd ? (
           <div className="text-center py-12">
             <Zap size={32} className="mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground mb-1">Nenhum prompt ainda.</p>
+            <p className="text-sm text-muted-foreground mb-1">Nenhum prompt de {promptTabs.find(t => t.key === activePromptTab)?.label.toLowerCase()} ainda.</p>
             <p className="text-xs text-muted-foreground">Adicione manualmente ou peça à IA no chat.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {prompts.map((prompt) => (
+            {filteredPrompts.map((prompt) => (
               <div key={prompt.id} className="p-4 rounded-xl bg-card border border-border group">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
