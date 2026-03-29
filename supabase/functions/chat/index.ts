@@ -330,10 +330,17 @@ serve(async (req) => {
       let baseBody: any;
 
       if (supportsTools) {
+        const generateInstruction = `\n\nINSTRUÇÃO OBRIGATÓRIA: Você DEVE usar as ferramentas save_prd, save_tasks e save_prompts para salvar os documentos do projeto. Baseado em TODA a conversa acima e no contexto do projeto, gere:
+1. O PRD completo em markdown (use save_prd)
+2. Uma lista de tarefas de desenvolvimento (use save_tasks) 
+3. Prompts prontos para usar na Lovable (use save_prompts)
+
+IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponível (incluindo o PRD existente se houver) para gerar os documentos. SEMPRE chame as 3 ferramentas.`;
         baseBody = {
           messages: [
-            { role: "system", content: systemPrompt + "\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable. Use as ferramentas save_prd, save_tasks e save_prompts para salvar tudo." },
+            { role: "system", content: systemPrompt + generateInstruction },
             ...messages,
+            { role: "user", content: "Por favor, gere o PRD, as tarefas e os prompts do projeto agora. Use as ferramentas disponíveis para salvar tudo." },
           ],
           tools,
           tool_choice: "auto",
