@@ -206,7 +206,7 @@ const ProjectPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext() }),
+        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id }),
       });
 
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
