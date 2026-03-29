@@ -66,7 +66,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
     setProvider(value);
     const p = PROVIDERS.find((pr) => pr.value === value)!;
     setModel(p.defaultModel);
-    if (value === "ollama") setBaseUrl("http://localhost:11434");
+    if (value === "ollama") setBaseUrl("");
     else setBaseUrl("");
     setApiKey("");
   };
