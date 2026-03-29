@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Scale, Save, Sparkles, Loader2, Pencil, Trash2, Plus, X, Check } from "lucide-react";
+import { Scale, Sparkles, Loader2, Pencil, Trash2, Plus, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
