@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
 import TypingIndicator from "@/components/chat/TypingIndicator";
@@ -12,26 +13,6 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts";
-
-const SYSTEM_PROMPT = `Você é o CodeBuddy, o melhor assistente para planejar e construir aplicativos na Lovable.
-
-Seu papel é guiar o usuário na construção de um PRD (Product Requirements Document) completo. Faça perguntas estratégicas uma de cada vez para entender:
-
-1. **Objetivo do app** — O que ele faz? Qual problema resolve?
-2. **Público-alvo** — Quem vai usar?
-3. **Funcionalidades principais** — Liste as features essenciais
-4. **Stack técnica** — Lovable usa React + Vite + Tailwind + TypeScript + Supabase
-5. **Design e UX** — Estilo visual, tema, referências
-6. **Autenticação** — Precisa de login? Que tipo?
-7. **Dados** — Quais tabelas e relações no banco?
-8. **Integrações** — APIs externas, pagamentos, etc?
-
-Após coletar informações suficientes, gere:
-- Um PRD estruturado em markdown
-- Uma checklist de tarefas para construir o app
-- Prompts prontos para usar na Lovable (um por funcionalidade)
-
-Seja conciso, amigável e focado. Use markdown com formatação clara. Responda em português.`;
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
