@@ -174,8 +174,11 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
                   className="mt-1"
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
-                  placeholder="http://localhost:11434"
+                  placeholder="https://seu-ollama.exemplo.com"
                 />
+                <p className="text-xs text-destructive/80 mt-1">
+                  ⚠️ <code className="text-[10px] bg-secondary px-1 rounded">localhost</code> não funciona — o backend roda na nuvem. Use uma URL pública (ex: ngrok, Tailscale, ou servidor com IP público).
+                </p>
               </div>
             )}
 
