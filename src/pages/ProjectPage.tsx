@@ -328,6 +328,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <LLMSettings projectId={id!} />
         <button
           onClick={handleGenerate}
           disabled={isGenerating || isLoading || messages.length < 4}
