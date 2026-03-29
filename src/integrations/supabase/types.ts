@@ -79,6 +79,50 @@ export type Database = {
         }
         Relationships: []
       }
+      project_llm_settings: {
+        Row: {
+          api_key: string | null
+          base_url: string | null
+          created_at: string
+          id: string
+          model: string | null
+          project_id: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          project_id: string
+          provider?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          project_id?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_llm_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_prompts: {
         Row: {
           category: string
