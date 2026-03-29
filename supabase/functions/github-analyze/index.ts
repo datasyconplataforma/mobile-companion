@@ -48,6 +48,23 @@ serve(async (req) => {
       ghHeaders["Authorization"] = `Bearer ${project.github_token}`;
     }
 
+    // First check if repo is accessible
+    const repoCheck = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`, {
+      headers: ghHeaders,
+    });
+    if (!repoCheck.ok) {
+      const status = repoCheck.status;
+      if (status === 404 || status === 403) {
+        const hasToken = !!project.github_token;
+        throw new Error(
+          hasToken
+            ? `Repositório não encontrado ou token sem permissão. Verifique se o token tem acesso ao repo "${parsed.owner}/${parsed.repo}" (permissão Contents read-only).`
+            : `Repositório "${parsed.owner}/${parsed.repo}" não acessível. Se for privado, adicione um Personal Access Token no diálogo do GitHub.`
+        );
+      }
+      throw new Error(`Erro ao acessar GitHub API (status ${status}).`);
+    }
+
     // Fetch repo tree from GitHub
     let tree: any[] = [];
     let branch = "main";
@@ -60,7 +77,7 @@ serve(async (req) => {
         headers: ghHeaders,
       });
     }
-    if (!treeResp.ok) throw new Error("Não foi possível acessar o repositório. Verifique a URL e o token.");
+    if (!treeResp.ok) throw new Error("Não foi possível acessar a árvore do repositório. Verifique se o branch principal é 'main' ou 'master'.");
     const treeData = await treeResp.json();
     tree = (treeData.tree || []).filter((t: any) => t.type === "blob").map((t: any) => t.path);
 
