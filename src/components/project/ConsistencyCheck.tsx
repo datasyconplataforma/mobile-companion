@@ -80,7 +80,7 @@ ${skills.length > 0 ? skills.map((s: any) => s.name).join(", ") : "(nenhuma)"}
 ${businessRules?.content || "(vazio)"}
 
 ## TAREFAS:
-${tasks.length > 0 ? tasks.map((t: any, i: number) => `${i + 1}. ${t.title} — ${t.description || "sem descrição"}`).join("\n") : "(nenhuma)"}
+${tasks.length > 0 ? tasks.map((t: any, i: number) => `${i + 1}. [${t.status}] ${t.title} — ${t.description || "sem descrição"}`).join("\n") : "(nenhuma)"}
 
 ## PROMPTS:
 ${prompts.length > 0 ? prompts.map((p: any, i: number) => `${i + 1}. [${(p as any).prompt_type || "implementation"}] ${p.title}: ${p.prompt_text}`).join("\n\n") : "(nenhum)"}
@@ -102,16 +102,36 @@ ${documents.filter((d: any) => d.extracted_text).length > 0
           messages: [
             {
               role: "user",
-              content: `Analise CRITICAMENTE o conjunto de informações deste projeto e identifique:
+              content: `Você é um auditor sênior de projetos de software. Analise CRITICAMENTE e COMPLETAMENTE o conjunto de informações deste projeto.
 
-1. **🔴 Contradições** — Informações que se contradizem entre PRD, regras de negócio, documentos, tasks ou prompts
-2. **🟡 Inconsistências** — Skills listadas que não aparecem no PRD/prompts, ou tecnologias no PRD que não estão nas skills
-3. **🟠 Lacunas** — Regras de negócio que não têm tarefas correspondentes, funcionalidades no PRD sem prompts
-4. **🔵 Redundâncias** — Informações duplicadas ou prompts que cobrem a mesma coisa
-5. **🟢 Sugestões** — Melhorias para tornar o conjunto mais coerente
+## CHECKLIST DE VERIFICAÇÃO (confirme cada item):
+- [ ] PRD foi analisado
+- [ ] Skills/tecnologias foram verificadas
+- [ ] Regras de negócio foram avaliadas
+- [ ] Todas as tarefas foram revisadas (incluindo status)
+- [ ] Todos os prompts foram analisados (tipo e conteúdo)
+- [ ] Todos os documentos anexados foram considerados
 
-Seja direto e específico. Cite exatamente onde está cada problema.
-Se tudo estiver consistente, diga isso claramente.
+## IDENTIFIQUE:
+
+1. **🔴 Contradições** — Informações que se contradizem entre PRD, regras de negócio, documentos, tasks ou prompts. Compare cada elemento com os demais.
+2. **🟡 Inconsistências** — Skills listadas que não aparecem no PRD/prompts, ou tecnologias no PRD que não estão nas skills. Prompts que referenciam funcionalidades não descritas no PRD.
+3. **🟠 Lacunas** — Regras de negócio que não têm tarefas correspondentes, funcionalidades no PRD sem prompts, tarefas sem prompts associados.
+4. **🔵 Redundâncias** — Informações duplicadas ou prompts que cobrem a mesma coisa.
+5. **⚠️ Críticas de Boas Práticas** — Avalie a qualidade de cada elemento:
+   - PRD: está claro, completo, com critérios de aceite?
+   - Tarefas: estão granulares o suficiente? Têm descrições adequadas?
+   - Prompts: são específicos e actionable? Têm contexto suficiente para um LLM executar?
+   - Regras de negócio: são claras e não ambíguas?
+   - Skills: são adequadas para o que o projeto precisa?
+   - Documentos: o conteúdo é relevante e está sendo bem aproveitado?
+6. **🟢 Sugestões** — Melhorias concretas para tornar o conjunto mais coerente e profissional.
+
+## REGRAS:
+- Seja direto e específico. Cite exatamente ONDE está cada problema (ex: "Na tarefa 3...", "No documento X...", "No prompt de revisão...").
+- NÃO ignore nenhuma seção, mesmo que esteja vazia (reporte como lacuna).
+- Se tudo estiver consistente, diga isso claramente com justificativa.
+- Ao final, dê uma nota geral de maturidade do projeto (1-10) com justificativa.
 
 ---
 ${contextSummary}`,
