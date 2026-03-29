@@ -95,7 +95,32 @@ const ProjectPage = () => {
     },
   });
 
-  useEffect(() => {
+  const { data: skills = [] } = useQuery({
+    queryKey: ["skills", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_skills" as any)
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: businessRules } = useQuery({
+    queryKey: ["business_rules", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_business_rules" as any)
+        .select("*")
+        .eq("project_id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
 
