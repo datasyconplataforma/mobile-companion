@@ -447,9 +447,17 @@ const ProjectPage = () => {
         </>
       )}
 
-      {activeTab === "prd" && <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />}
+      {activeTab === "prd" && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="shrink-0 px-4 py-3 border-b border-border">
+            <SkillList projectId={id!} />
+          </div>
+          <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
+        </div>
+      )}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
+      {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
     </div>
   );
