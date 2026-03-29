@@ -14,7 +14,7 @@ import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
