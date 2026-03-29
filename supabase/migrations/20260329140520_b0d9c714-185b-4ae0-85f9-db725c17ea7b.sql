@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN github_token text DEFAULT NULL;

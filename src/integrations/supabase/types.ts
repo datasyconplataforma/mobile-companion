@@ -327,6 +327,7 @@ export type Database = {
           created_at: string
           description: string | null
           github_repo_url: string | null
+          github_token: string | null
           id: string
           name: string
           prd_content: string | null
@@ -338,6 +339,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           github_repo_url?: string | null
+          github_token?: string | null
           id?: string
           name: string
           prd_content?: string | null
@@ -349,6 +351,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           github_repo_url?: string | null
+          github_token?: string | null
           id?: string
           name?: string
           prd_content?: string | null
