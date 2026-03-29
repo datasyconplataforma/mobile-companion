@@ -387,6 +387,11 @@ const ProjectPage = () => {
           {project?.name || "..."}
         </span>
         <ConsistencyCheck projectId={id!} />
+        <GitHubConnection
+          projectId={id!}
+          githubRepoUrl={project?.github_repo_url}
+          onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })}
+        />
         <LLMSettings projectId={id!} />
         <button
           onClick={handleGenerate}
