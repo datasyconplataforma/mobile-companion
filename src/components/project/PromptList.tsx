@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X } from "lucide-react";
+import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X, Code, Search, Shield } from "lucide-react";
 
 interface PromptListProps {
   projectId: string;
@@ -17,6 +17,14 @@ const categoryColors: Record<string, string> = {
 };
 
 const categories = ["general", "setup", "feature", "ui", "backend"];
+
+type PromptTab = "implementation" | "review" | "security";
+
+const promptTabs: { key: PromptTab; label: string; icon: typeof Code }[] = [
+  { key: "implementation", label: "Implementação", icon: Code },
+  { key: "review", label: "Revisão", icon: Search },
+  { key: "security", label: "Segurança", icon: Shield },
+];
 
 const PromptList = ({ projectId }: PromptListProps) => {
   const { user } = useAuth();
