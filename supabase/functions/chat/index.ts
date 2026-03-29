@@ -323,17 +323,39 @@ serve(async (req) => {
     const providerConfig = getProviderConfig(llmSettings, LOVABLE_API_KEY);
     const systemPrompt = buildSystemPrompt(projectContext || {});
     const isClaude = llmSettings?.provider === "claude";
+    const supportsTools = !llmSettings?.provider || llmSettings?.provider === "lovable" || llmSettings?.provider === "gemini" || llmSettings?.provider === "claude";
 
-    // "generate" action: non-streaming with tool calling
+    // "generate" action: non-streaming with tool calling (or JSON fallback)
     if (action === "generate") {
-      const baseBody: any = {
-        messages: [
-          { role: "system", content: systemPrompt + "\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable. Use as ferramentas save_prd, save_tasks e save_prompts para salvar tudo." },
-          ...messages,
-        ],
-        tools,
-        tool_choice: "auto",
-      };
+      let baseBody: any;
+
+      if (supportsTools) {
+        baseBody = {
+          messages: [
+            { role: "system", content: systemPrompt + "\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable. Use as ferramentas save_prd, save_tasks e save_prompts para salvar tudo." },
+            ...messages,
+          ],
+          tools,
+          tool_choice: "auto",
+        };
+      } else {
+        // JSON fallback for providers without tool calling support
+        const jsonPrompt = systemPrompt + `\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable.
+
+Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes/depois) neste formato exato:
+{
+  "prd_content": "conteúdo completo do PRD em markdown",
+  "tasks": [{"title": "tarefa 1", "description": "descrição"}],
+  "prompts": [{"title": "titulo", "prompt_text": "texto do prompt", "category": "setup|feature|ui|backend|general"}],
+  "message": "mensagem opcional para o usuário"
+}`;
+        baseBody = {
+          messages: [
+            { role: "system", content: jsonPrompt },
+            ...messages,
+          ],
+        };
+      }
 
       const requestBody = providerConfig.transformBody(baseBody);
 
@@ -352,49 +374,88 @@ serve(async (req) => {
       }
 
       const rawResult = await response.json();
-      const result = isClaude ? transformClaudeResponse(rawResult) : rawResult;
-      const toolCalls = result.choices?.[0]?.message?.tool_calls || [];
-      const contentText = result.choices?.[0]?.message?.content || "";
-
+      
       // Process tool calls and save to database
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
-
       const saved: Record<string, boolean> = {};
+      let contentText = "";
 
-      for (const call of toolCalls) {
+      if (supportsTools) {
+        const result = isClaude ? transformClaudeResponse(rawResult) : rawResult;
+        const toolCalls = result.choices?.[0]?.message?.tool_calls || [];
+        contentText = result.choices?.[0]?.message?.content || "";
+
+        for (const call of toolCalls) {
+          try {
+            const args = JSON.parse(call.function.arguments);
+            if (call.function.name === "save_prd" && args.prd_content) {
+              await supabase.from("projects").update({ prd_content: args.prd_content, status: "prd_ready" }).eq("id", projectId);
+              saved.prd = true;
+            }
+            if (call.function.name === "save_tasks" && args.tasks) {
+              await supabase.from("project_tasks").delete().eq("project_id", projectId);
+              const taskRows = args.tasks.map((t: any, i: number) => ({
+                project_id: projectId, user_id: userId,
+                title: t.title, description: t.description || null,
+                sort_order: i, status: "todo",
+              }));
+              await supabase.from("project_tasks").insert(taskRows);
+              saved.tasks = true;
+            }
+            if (call.function.name === "save_prompts" && args.prompts) {
+              await supabase.from("project_prompts").delete().eq("project_id", projectId);
+              const promptRows = args.prompts.map((p: any, i: number) => ({
+                project_id: projectId, user_id: userId,
+                title: p.title, prompt_text: p.prompt_text,
+                category: p.category || "general", sort_order: i,
+              }));
+              await supabase.from("project_prompts").insert(promptRows);
+              saved.prompts = true;
+            }
+          } catch (e) {
+            console.error("Tool call error:", e);
+          }
+        }
+      } else {
+        // Parse JSON from response content
+        const rawContent = rawResult.choices?.[0]?.message?.content || "";
         try {
-          const args = JSON.parse(call.function.arguments);
+          // Extract JSON from response (handle markdown code blocks too)
+          const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
 
-          if (call.function.name === "save_prd" && args.prd_content) {
-            await supabase.from("projects").update({ prd_content: args.prd_content, status: "prd_ready" }).eq("id", projectId);
-            saved.prd = true;
-          }
-
-          if (call.function.name === "save_tasks" && args.tasks) {
-            await supabase.from("project_tasks").delete().eq("project_id", projectId);
-            const taskRows = args.tasks.map((t: any, i: number) => ({
-              project_id: projectId, user_id: userId,
-              title: t.title, description: t.description || null,
-              sort_order: i, status: "todo",
-            }));
-            await supabase.from("project_tasks").insert(taskRows);
-            saved.tasks = true;
-          }
-
-          if (call.function.name === "save_prompts" && args.prompts) {
-            await supabase.from("project_prompts").delete().eq("project_id", projectId);
-            const promptRows = args.prompts.map((p: any, i: number) => ({
-              project_id: projectId, user_id: userId,
-              title: p.title, prompt_text: p.prompt_text,
-              category: p.category || "general", sort_order: i,
-            }));
-            await supabase.from("project_prompts").insert(promptRows);
-            saved.prompts = true;
+            if (parsed.prd_content) {
+              await supabase.from("projects").update({ prd_content: parsed.prd_content, status: "prd_ready" }).eq("id", projectId);
+              saved.prd = true;
+            }
+            if (parsed.tasks?.length) {
+              await supabase.from("project_tasks").delete().eq("project_id", projectId);
+              const taskRows = parsed.tasks.map((t: any, i: number) => ({
+                project_id: projectId, user_id: userId,
+                title: t.title, description: t.description || null,
+                sort_order: i, status: "todo",
+              }));
+              await supabase.from("project_tasks").insert(taskRows);
+              saved.tasks = true;
+            }
+            if (parsed.prompts?.length) {
+              await supabase.from("project_prompts").delete().eq("project_id", projectId);
+              const promptRows = parsed.prompts.map((p: any, i: number) => ({
+                project_id: projectId, user_id: userId,
+                title: p.title, prompt_text: p.prompt_text,
+                category: p.category || "general", sort_order: i,
+              }));
+              await supabase.from("project_prompts").insert(promptRows);
+              saved.prompts = true;
+            }
+            contentText = parsed.message || "";
           }
         } catch (e) {
-          console.error("Tool call error:", e);
+          console.error("JSON parse error:", e);
+          contentText = rawContent;
         }
       }
 
