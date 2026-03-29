@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Scale, Save, Sparkles, Loader2 } from "lucide-react";
+import { Scale, Save, Sparkles, Loader2, Pencil, Eye } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 
 interface BusinessRulesProps {
