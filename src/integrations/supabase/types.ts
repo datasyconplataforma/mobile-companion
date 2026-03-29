@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          excluded: boolean
           id: string
           project_id: string
           role: string
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          excluded?: boolean
           id?: string
           project_id: string
           role: string
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          excluded?: boolean
           id?: string
           project_id?: string
           role?: string
