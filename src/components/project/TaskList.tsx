@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckSquare, Circle, CheckCircle2, Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { CheckSquare, Circle, CheckCircle2, Clock, Loader2, Plus, Trash2 } from "lucide-react";
 
 interface TaskListProps {
   projectId: string;
