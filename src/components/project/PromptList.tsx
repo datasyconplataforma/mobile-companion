@@ -33,6 +33,7 @@ const PromptList = ({ projectId }: PromptListProps) => {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", prompt_text: "", category: "general" });
+  const [activePromptTab, setActivePromptTab] = useState<PromptTab>("implementation");
 
   const { data: prompts = [], isLoading } = useQuery({
     queryKey: ["prompts", projectId],
