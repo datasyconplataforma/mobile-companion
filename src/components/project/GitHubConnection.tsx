@@ -63,7 +63,7 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
     setSaving(true);
     const { error } = await supabase
       .from("projects")
-      .update({ github_repo_url: repoUrl || null } as any)
+      .update({ github_repo_url: repoUrl || null, github_token: token || null } as any)
       .eq("id", projectId);
     setSaving(false);
     if (error) {
