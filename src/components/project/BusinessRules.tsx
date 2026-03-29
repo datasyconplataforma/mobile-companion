@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Scale, Save, Sparkles, Loader2, Pencil, Trash2, Plus, X, Check } from "lucide-react";
+import { Scale, Sparkles, Loader2, Pencil, Trash2, Plus, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -84,33 +84,11 @@ const BusinessRules = ({ projectId }: BusinessRulesProps) => {
     saveToDb(updated);
   };
 
-  const handleDelete = (index: number) => {
-    const updated = rules.filter((_, i) => i !== index);
-    setRules(updated);
-    saveToDb(updated);
-  };
-
-  const handleEditStart = (index: number) => {
-    setEditingIndex(index);
-    setEditValue(rules[index]);
-  };
-
-  const handleEditSave = () => {
-    if (editingIndex === null || !editValue.trim()) return;
-    const updated = [...rules];
-    updated[editingIndex] = editValue.trim();
-    setRules(updated);
-    setEditingIndex(null);
-    setEditValue("");
-    saveToDb(updated);
-  };
-
-  const handleEditCancel = () => {
-    setEditingIndex(null);
-    setEditValue("");
-  };
-
-  const generateWithAI = async () => {
+  const handleImproveWithAI = async () => {
+    if (!newRule.trim()) {
+      toast({ title: "Aviso", description: "Digite uma regra para a IA melhorar.", variant: "destructive" });
+      return;
+    }
     setIsGenerating(true);
     try {
       const { data: project } = await supabase
@@ -119,14 +97,6 @@ const BusinessRules = ({ projectId }: BusinessRulesProps) => {
         .eq("id", projectId)
         .single();
 
-      const { data: messages } = await supabase
-        .from("chat_messages")
-        .select("role, content")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: true })
-        .limit(20);
-
-      const existingContent = serializeRules(rules);
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -136,14 +106,9 @@ const BusinessRules = ({ projectId }: BusinessRulesProps) => {
         },
         body: JSON.stringify({
           messages: [
-            ...(messages || []).map((m) => ({ role: m.role, content: m.content })),
             {
               role: "user",
-              content: `Baseado no PRD e na conversa, gere uma lista completa de REGRAS DE NEGÓCIO para o projeto "${project?.name}". 
-Formato: lista numerada com regras claras e objetivas. Inclua validações, permissões, limites, fluxos obrigatórios e restrições.
-${existingContent ? `\n\nRegras existentes para complementar:\n${existingContent}` : ""}
-${project?.prd_content ? `\n\nPRD:\n${project.prd_content}` : ""}
-Responda APENAS com as regras numeradas, sem introdução.`,
+              content: `Melhore e refine a seguinte regra de negócio para o projeto "${project?.name}". Torne-a mais clara, objetiva e profissional. Mantenha o mesmo sentido original. Responda APENAS com o texto da regra melhorada, sem numeração, sem introdução, sem explicação.\n\nRegra original: "${newRule.trim()}"${project?.prd_content ? `\n\nContexto do PRD:\n${project.prd_content}` : ""}`,
             },
           ],
           projectContext: { prd: project?.prd_content || "" },
@@ -178,19 +143,46 @@ Responda APENAS com as regras numeradas, sem introdução.`,
         }
       }
 
-      const generated = full
-        .split("\n")
-        .map((l) => l.replace(/^\d+\.\s*/, "").trim())
-        .filter((l) => l.length > 0);
-      setRules(generated);
-      saveToDb(generated);
-      toast({ title: "Gerado! ✨", description: "Revise as regras geradas." });
+      const improved = full.replace(/^\d+\.\s*/, "").trim();
+      if (improved) {
+        setNewRule(improved);
+        toast({ title: "Melhorado! ✨", description: "Revise e salve a regra." });
+      }
     } catch {
-      toast({ title: "Erro", description: "Falha ao gerar regras.", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao melhorar regra.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
   };
+
+  const handleDelete = (index: number) => {
+    const updated = rules.filter((_, i) => i !== index);
+    setRules(updated);
+    saveToDb(updated);
+  };
+
+  const handleEditStart = (index: number) => {
+    setEditingIndex(index);
+    setEditValue(rules[index]);
+  };
+
+  const handleEditSave = () => {
+    if (editingIndex === null || !editValue.trim()) return;
+    const updated = [...rules];
+    updated[editingIndex] = editValue.trim();
+    setRules(updated);
+    setEditingIndex(null);
+    setEditValue("");
+    saveToDb(updated);
+  };
+
+  const handleEditCancel = () => {
+    setEditingIndex(null);
+    setEditValue("");
+  };
+
+
+
 
   if (isLoading) {
     return (
@@ -215,14 +207,6 @@ Responda APENAS com as regras numeradas, sem introdução.`,
             <Plus size={13} />
             Adicionar
           </button>
-          <button
-            onClick={generateWithAI}
-            disabled={isGenerating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 disabled:opacity-40 transition-all"
-          >
-            {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            Gerar com IA
-          </button>
         </div>
       </div>
 
@@ -242,6 +226,14 @@ Responda APENAS com as regras numeradas, sem introdução.`,
               rows={2}
             />
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={handleImproveWithAI}
+                disabled={isGenerating}
+                className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
+                title="Melhorar com IA"
+              >
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              </button>
               <button onClick={handleAdd} className="p-1.5 rounded-lg hover:bg-primary/20 text-primary transition-all">
                 <Check size={14} />
               </button>
