@@ -72,7 +72,7 @@ const ProjectPage = () => {
         .from("project_prompts")
         .select("*")
         .eq("project_id", id!)
-        .order("order_index", { ascending: true });
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
