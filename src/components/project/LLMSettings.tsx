@@ -15,7 +15,7 @@ const PROVIDERS = [
   { value: "gemini", label: "Google Gemini", needsKey: true, needsUrl: false, defaultModel: "gemini-2.5-flash", placeholder: "AIzaSy..." },
   { value: "openrouter", label: "OpenRouter", needsKey: true, needsUrl: false, defaultModel: "google/gemini-2.5-flash-preview-05-20", placeholder: "sk-or-..." },
   { value: "claude", label: "Claude (Anthropic)", needsKey: true, needsUrl: false, defaultModel: "claude-sonnet-4-20250514", placeholder: "sk-ant-..." },
-  { value: "ollama", label: "Ollama (local)", needsKey: false, needsUrl: true, defaultModel: "llama3.2", placeholder: "" },
+  { value: "ollama", label: "Ollama (local + cloud)", needsKey: false, needsUrl: true, defaultModel: "llama3.2", placeholder: "" },
 ];
 
 interface LLMSettingsProps {
@@ -190,6 +190,11 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
               {provider === "openrouter" && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Veja modelos em openrouter.ai/models
+                </p>
+              )}
+              {provider === "ollama" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Local: llama3.2, mistral, qwen2.5 · Cloud: gpt-oss:120b-cloud, deepseek-v3.1:671b-cloud, qwen3-coder:480b-cloud (requer <code className="text-[10px] bg-secondary px-1 rounded">ollama signin</code>)
                 </p>
               )}
             </div>
