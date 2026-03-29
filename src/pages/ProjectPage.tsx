@@ -13,8 +13,10 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
+import SkillList from "@/components/project/SkillList";
+import BusinessRules from "@/components/project/BusinessRules";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
