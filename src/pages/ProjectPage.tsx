@@ -248,11 +248,6 @@ const ProjectPage = () => {
     setIsGenerating(true);
     try {
       const historyMessages = messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-      const projectContext = {
-        prd: project?.prd_content || "",
-        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
-        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
-      };
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
@@ -263,7 +258,7 @@ const ProjectPage = () => {
         },
         body: JSON.stringify({
           messages: historyMessages,
-          projectContext,
+          projectContext: buildContext(),
           projectId: id,
           userId: user!.id,
           action: "generate",
@@ -278,14 +273,12 @@ const ProjectPage = () => {
       if (result.saved?.tasks) savedItems.push("Tarefas");
       if (result.saved?.prompts) savedItems.push("Prompts");
 
-      // Invalidate all queries
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["prompts", id] });
 
       if (savedItems.length > 0) {
         toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
-        // Save a system message about the generation
         await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}` });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
       } else {
