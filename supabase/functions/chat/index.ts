@@ -31,7 +31,7 @@ Seja conciso, amigável e focado. Use markdown com formatação clara. Responda 
 
 IMPORTANTE: Você tem acesso ao contexto completo do projeto abaixo. Use essas informações para dar respostas mais precisas e evitar perguntas repetidas.`;
 
-function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[] }): string {
+function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[] }): string {
   let prompt = BASE_SYSTEM_PROMPT;
 
   if (context.prd && context.prd.trim()) {
@@ -50,6 +50,13 @@ function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any
       .map((p: any, i: number) => `### Prompt ${i + 1}: ${p.title}\n${p.content}`)
       .join("\n\n");
     prompt += `\n\n---\n## PROMPTS LOVABLE DO PROJETO:\n${promptList}`;
+  }
+
+  if (context.documents && context.documents.length > 0) {
+    const docList = context.documents
+      .map((d: any, i: number) => `### Documento ${i + 1}: ${d.name}\n${d.content}`)
+      .join("\n\n");
+    prompt += `\n\n---\n## DOCUMENTOS DE REFERÊNCIA ANEXADOS:\nOs documentos abaixo foram fornecidos pelo usuário como referência. Use essas informações para enriquecer o PRD, tarefas e prompts:\n\n${docList}`;
   }
 
   return prompt;
