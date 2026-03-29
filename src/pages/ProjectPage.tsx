@@ -117,6 +117,9 @@ const ProjectPage = () => {
     prd: project?.prd_content || "",
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+    documents: documents
+      .filter((d) => d.extracted_text)
+      .map((d) => ({ name: d.file_name, content: d.extracted_text })),
   });
 
   const handleDeleteMessage = async (messageId: string) => {
