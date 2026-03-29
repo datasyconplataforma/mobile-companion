@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o CodeBuddy, o melhor assistente para planejar e construir aplicativos na Lovable.
+const BASE_SYSTEM_PROMPT = `Você é o CodeBuddy, o melhor assistente para planejar e construir aplicativos na Lovable.
 
 Seu papel é guiar o usuário na construção de um PRD (Product Requirements Document) completo. Faça perguntas estratégicas uma de cada vez para entender:
 
@@ -23,15 +23,43 @@ Após coletar informações suficientes, gere:
 - Uma checklist de tarefas para construir o app
 - Prompts prontos para usar na Lovable (um por funcionalidade)
 
-Seja conciso, amigável e focado. Use markdown com formatação clara. Responda em português.`;
+Seja conciso, amigável e focado. Use markdown com formatação clara. Responda em português.
+
+IMPORTANTE: Você tem acesso ao contexto completo do projeto abaixo. Use essas informações para dar respostas mais precisas e evitar perguntas repetidas. Quando o usuário pedir para atualizar o PRD, tarefas ou prompts, gere o conteúdo atualizado de forma clara.`;
+
+function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[] }): string {
+  let prompt = BASE_SYSTEM_PROMPT;
+
+  if (context.prd && context.prd.trim()) {
+    prompt += `\n\n---\n## PRD ATUAL DO PROJETO:\n${context.prd}`;
+  }
+
+  if (context.tasks && context.tasks.length > 0) {
+    const taskList = context.tasks
+      .map((t, i) => `${i + 1}. [${t.completed ? "✅" : "⬜"}] ${t.title}`)
+      .join("\n");
+    prompt += `\n\n---\n## TAREFAS DO PROJETO:\n${taskList}`;
+  }
+
+  if (context.prompts && context.prompts.length > 0) {
+    const promptList = context.prompts
+      .map((p, i) => `### Prompt ${i + 1}: ${p.title}\n${p.content}`)
+      .join("\n\n");
+    prompt += `\n\n---\n## PROMPTS LOVABLE DO PROJETO:\n${promptList}`;
+  }
+
+  return prompt;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    const { messages, projectContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const systemPrompt = buildSystemPrompt(projectContext || {});
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -42,7 +70,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
