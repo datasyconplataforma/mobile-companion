@@ -80,7 +80,7 @@ ${skills.length > 0 ? skills.map((s: any) => s.name).join(", ") : "(nenhuma)"}
 ${businessRules?.content || "(vazio)"}
 
 ## TAREFAS:
-${tasks.length > 0 ? tasks.map((t: any, i: number) => `${i + 1}. ${t.title} — ${t.description || "sem descrição"}`).join("\n") : "(nenhuma)"}
+${tasks.length > 0 ? tasks.map((t: any, i: number) => `${i + 1}. [${t.status}] ${t.title} — ${t.description || "sem descrição"}`).join("\n") : "(nenhuma)"}
 
 ## PROMPTS:
 ${prompts.length > 0 ? prompts.map((p: any, i: number) => `${i + 1}. [${(p as any).prompt_type || "implementation"}] ${p.title}: ${p.prompt_text}`).join("\n\n") : "(nenhum)"}
