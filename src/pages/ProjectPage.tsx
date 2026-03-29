@@ -69,6 +69,32 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["tasks", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", id!)
+        .order("order_index", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: prompts = [] } = useQuery({
+    queryKey: ["prompts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_prompts")
+        .select("*")
+        .eq("project_id", id!)
+        .order("order_index", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
