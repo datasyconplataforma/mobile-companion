@@ -247,6 +247,14 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating || isLoading || messages.length < 4}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all"
+        >
+          {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+          Gerar PRD
+        </button>
       </header>
 
       {/* Tabs */}
