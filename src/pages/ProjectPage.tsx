@@ -15,6 +15,7 @@ import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
 import SkillList from "@/components/project/SkillList";
 import BusinessRules from "@/components/project/BusinessRules";
+import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
@@ -384,6 +385,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <ConsistencyCheck projectId={id!} />
         <LLMSettings projectId={id!} />
         <button
           onClick={handleGenerate}
