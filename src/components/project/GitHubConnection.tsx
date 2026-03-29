@@ -44,8 +44,14 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
       setRepoUrl(githubRepoUrl || "");
       setAnalysisResult(null);
       setRepoTree(null);
+      // Load saved token
+      if (projectId) {
+        supabase.from("projects").select("github_token").eq("id", projectId).single().then(({ data }) => {
+          setToken((data as any)?.github_token || "");
+        });
+      }
     }
-  }, [open, githubRepoUrl]);
+  }, [open, githubRepoUrl, projectId]);
 
   const handleSaveRepo = async () => {
     if (!user) return;
