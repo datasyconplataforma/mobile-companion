@@ -104,6 +104,24 @@ const ProjectPage = () => {
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
   });
 
+  const handleDeleteMessage = async (messageId: string) => {
+    const { error } = await supabase.from("chat_messages").delete().eq("id", messageId);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao excluir mensagem.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["messages", id] });
+  };
+
+  const handleToggleExclude = async (messageId: string, excluded: boolean) => {
+    const { error } = await supabase.from("chat_messages").update({ excluded }).eq("id", messageId);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao atualizar mensagem.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["messages", id] });
+  };
+
   const handleSend = async (content: string) => {
     // Save user message
     await saveMessage.mutateAsync({ role: "user", content });
