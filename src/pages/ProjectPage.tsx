@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
@@ -12,8 +12,9 @@ import PRDView from "@/components/project/PRDView";
 import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
+import DocumentList from "@/components/project/DocumentList";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -79,6 +80,19 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: documents = [] } = useQuery({
+    queryKey: ["documents", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_documents")
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
@@ -103,6 +117,9 @@ const ProjectPage = () => {
     prd: project?.prd_content || "",
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+    documents: documents
+      .filter((d) => d.extracted_text)
+      .map((d) => ({ name: d.file_name, content: d.extracted_text })),
   });
 
   const handleDeleteMessage = async (messageId: string) => {
@@ -323,6 +340,7 @@ const ProjectPage = () => {
     { key: "prd", icon: FileText, label: "PRD" },
     { key: "tasks", icon: CheckSquare, label: "Tarefas" },
     { key: "prompts", icon: Zap, label: "Prompts" },
+    { key: "docs", icon: Paperclip, label: "Docs" },
   ];
 
   return (
@@ -401,6 +419,7 @@ const ProjectPage = () => {
       {activeTab === "prd" && <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
+      {activeTab === "docs" && <DocumentList projectId={id!} />}
     </div>
   );
 };
