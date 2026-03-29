@@ -162,31 +162,61 @@ Responda APENAS com as regras, sem introdução.`,
           Regras de Negócio
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={generateWithAI}
-            disabled={isGenerating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 disabled:opacity-40 transition-all"
-          >
-            {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            Gerar com IA
-          </button>
-          <button
-            onClick={saveRules}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 transition-all"
-          >
-            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-            Salvar
-          </button>
+          {!isEditing && content.trim() && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 transition-all"
+            >
+              <Pencil size={13} />
+              Editar
+            </button>
+          )}
+          {isEditing && (
+            <>
+              <button
+                onClick={generateWithAI}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 disabled:opacity-40 transition-all"
+              >
+                {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                Gerar com IA
+              </button>
+              <button
+                onClick={() => { saveRules(); setIsEditing(false); }}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 transition-all"
+              >
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                Salvar
+              </button>
+            </>
+          )}
+          {!content.trim() && !isEditing && (
+            <button
+              onClick={generateWithAI}
+              disabled={isGenerating}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 disabled:opacity-40 transition-all"
+            >
+              {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              Gerar com IA
+            </button>
+          )}
         </div>
       </div>
       <div className="flex-1 p-4 overflow-y-auto scrollbar-thin">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Digite ou gere as regras de negócio do projeto...&#10;&#10;Exemplo:&#10;1. O cliente só pode resgatar cashback após 7 dias da compra&#10;2. O valor mínimo de resgate é R$ 5,00&#10;3. Apenas administradores podem lançar transações"
-          className="w-full h-full min-h-[300px] px-4 py-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-        />
+        {isEditing || !content.trim() ? (
+          <textarea
+            autoFocus
+            value={content}
+            onChange={(e) => { setContent(e.target.value); if (!isEditing) setIsEditing(true); }}
+            placeholder="Digite ou gere as regras de negócio do projeto...&#10;&#10;Exemplo:&#10;1. O cliente só pode resgatar cashback após 7 dias da compra&#10;2. O valor mínimo de resgate é R$ 5,00&#10;3. Apenas administradores podem lançar transações"
+            className="w-full h-full min-h-[300px] px-4 py-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+          />
+        ) : (
+          <div className="prose prose-sm prose-invert max-w-none px-4 py-3 rounded-xl bg-card border border-border">
+            <ReactMarkdown>{content}</ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
