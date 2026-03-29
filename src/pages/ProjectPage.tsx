@@ -209,7 +209,14 @@ const ProjectPage = () => {
         body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id }),
       });
 
-      if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
+      if (!resp.ok || !resp.body) {
+        let errMsg = "Falha ao conectar com a IA.";
+        try { const errData = await resp.json(); errMsg = errData.error || errMsg; } catch {}
+        toast({ title: "Erro", description: errMsg, variant: "destructive" });
+        setIsLoading(false);
+        setStreamingContent("");
+        return;
+      }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();

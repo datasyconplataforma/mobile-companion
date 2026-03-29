@@ -448,7 +448,14 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    // Friendly error for connection issues (e.g. Ollama localhost)
+    if (msg.includes("Connection refused") || msg.includes("tcp connect error")) {
+      return new Response(JSON.stringify({ error: "Não foi possível conectar ao provedor de IA. Se está usando Ollama, lembre que 'localhost' não funciona — use uma URL pública (ngrok, Tailscale, etc)." }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
