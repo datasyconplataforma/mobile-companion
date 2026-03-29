@@ -164,12 +164,40 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
           {/* Connection section */}
           {!isConnected ? (
             <div className="space-y-3">
-              <Input
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/owner/repo"
-                className="font-mono text-xs"
-              />
+              <div>
+                <Label className="text-xs">URL do Repositório</Label>
+                <Input
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo"
+                  className="font-mono text-xs mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1.5">
+                  <KeyRound size={12} />
+                  Token (opcional — para repos privados)
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    type={showToken ? "text" : "password"}
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    className="font-mono text-xs pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Crie em GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens (permissão: Contents read-only)
+                </p>
+              </div>
               <Button onClick={handleSaveRepo} disabled={saving || !repoUrl} className="w-full" size="sm">
                 {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : <Link2 size={14} className="mr-1" />}
                 Conectar Repositório
