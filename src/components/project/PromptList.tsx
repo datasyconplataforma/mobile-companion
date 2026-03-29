@@ -56,8 +56,9 @@ const PromptList = ({ projectId }: PromptListProps) => {
         title: input.title,
         prompt_text: input.prompt_text,
         category: input.category,
-        sort_order: prompts.length,
-      });
+        sort_order: filteredPrompts.length,
+        prompt_type: activePromptTab,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -65,6 +66,8 @@ const PromptList = ({ projectId }: PromptListProps) => {
       resetForm();
     },
   });
+
+  const filteredPrompts = prompts.filter((p: any) => (p.prompt_type || "implementation") === activePromptTab);
 
   const updatePrompt = useMutation({
     mutationFn: async ({ id, ...input }: { id: string; title: string; prompt_text: string; category: string }) => {
