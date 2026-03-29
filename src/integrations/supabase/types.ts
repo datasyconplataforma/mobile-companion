@@ -79,6 +79,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_business_rules: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_business_rules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_documents: {
         Row: {
           created_at: string
@@ -174,6 +209,7 @@ export type Database = {
           id: string
           project_id: string
           prompt_text: string
+          prompt_type: string
           sort_order: number
           title: string
           user_id: string
@@ -184,6 +220,7 @@ export type Database = {
           id?: string
           project_id: string
           prompt_text: string
+          prompt_type?: string
           sort_order?: number
           title: string
           user_id: string
@@ -194,6 +231,7 @@ export type Database = {
           id?: string
           project_id?: string
           prompt_text?: string
+          prompt_type?: string
           sort_order?: number
           title?: string
           user_id?: string
@@ -201,6 +239,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_prompts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_skills: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_skills_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"

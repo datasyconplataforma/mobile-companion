@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X } from "lucide-react";
+import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X, Code, Search, Shield } from "lucide-react";
 
 interface PromptListProps {
   projectId: string;
@@ -18,6 +18,14 @@ const categoryColors: Record<string, string> = {
 
 const categories = ["general", "setup", "feature", "ui", "backend"];
 
+type PromptTab = "implementation" | "review" | "security";
+
+const promptTabs: { key: PromptTab; label: string; icon: typeof Code }[] = [
+  { key: "implementation", label: "Implementação", icon: Code },
+  { key: "review", label: "Revisão", icon: Search },
+  { key: "security", label: "Segurança", icon: Shield },
+];
+
 const PromptList = ({ projectId }: PromptListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -25,6 +33,7 @@ const PromptList = ({ projectId }: PromptListProps) => {
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", prompt_text: "", category: "general" });
+  const [activePromptTab, setActivePromptTab] = useState<PromptTab>("implementation");
 
   const { data: prompts = [], isLoading } = useQuery({
     queryKey: ["prompts", projectId],
@@ -47,8 +56,9 @@ const PromptList = ({ projectId }: PromptListProps) => {
         title: input.title,
         prompt_text: input.prompt_text,
         category: input.category,
-        sort_order: prompts.length,
-      });
+        sort_order: filteredPrompts.length,
+        prompt_type: activePromptTab,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -56,6 +66,8 @@ const PromptList = ({ projectId }: PromptListProps) => {
       resetForm();
     },
   });
+
+  const filteredPrompts = prompts.filter((p: any) => (p.prompt_type || "implementation") === activePromptTab);
 
   const updatePrompt = useMutation({
     mutationFn: async ({ id, ...input }: { id: string; title: string; prompt_text: string; category: string }) => {
@@ -113,17 +125,36 @@ const PromptList = ({ projectId }: PromptListProps) => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-      <div className="max-w-lg mx-auto">
-        {prompts.length === 0 && !showAdd ? (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sub-tabs */}
+      <div className="shrink-0 flex border-b border-border bg-card/30 px-4">
+        {promptTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => { setActivePromptTab(tab.key); resetForm(); }}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
+              activePromptTab === tab.key
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`}
+          >
+            <tab.icon size={13} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+        <div className="max-w-lg mx-auto">
+        {filteredPrompts.length === 0 && !showAdd ? (
           <div className="text-center py-12">
             <Zap size={32} className="mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground mb-1">Nenhum prompt ainda.</p>
+            <p className="text-sm text-muted-foreground mb-1">Nenhum prompt de {promptTabs.find(t => t.key === activePromptTab)?.label.toLowerCase()} ainda.</p>
             <p className="text-xs text-muted-foreground">Adicione manualmente ou peça à IA no chat.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {prompts.map((prompt) => (
+            {filteredPrompts.map((prompt) => (
               <div key={prompt.id} className="p-4 rounded-xl bg-card border border-border group">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -216,6 +247,7 @@ const PromptList = ({ projectId }: PromptListProps) => {
             Adicionar prompt
           </button>
         )}
+      </div>
       </div>
     </div>
   );

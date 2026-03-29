@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
@@ -13,8 +13,10 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
+import SkillList from "@/components/project/SkillList";
+import BusinessRules from "@/components/project/BusinessRules";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,6 +95,32 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: skills = [] } = useQuery({
+    queryKey: ["skills", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_skills" as any)
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: businessRules } = useQuery({
+    queryKey: ["business_rules", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_business_rules" as any)
+        .select("*")
+        .eq("project_id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
@@ -120,6 +148,8 @@ const ProjectPage = () => {
     documents: documents
       .filter((d) => d.extracted_text)
       .map((d) => ({ name: d.file_name, content: d.extracted_text })),
+    skills: skills.map((s: any) => s.name),
+    businessRules: businessRules?.content || "",
   });
 
   const handleDeleteMessage = async (messageId: string) => {
@@ -340,6 +370,7 @@ const ProjectPage = () => {
     { key: "prd", icon: FileText, label: "PRD" },
     { key: "tasks", icon: CheckSquare, label: "Tarefas" },
     { key: "prompts", icon: Zap, label: "Prompts" },
+    { key: "rules", icon: Scale, label: "Regras" },
     { key: "docs", icon: Paperclip, label: "Docs" },
   ];
 
@@ -416,9 +447,17 @@ const ProjectPage = () => {
         </>
       )}
 
-      {activeTab === "prd" && <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />}
+      {activeTab === "prd" && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="shrink-0 px-4 py-3 border-b border-border">
+            <SkillList projectId={id!} />
+          </div>
+          <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
+        </div>
+      )}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
+      {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
     </div>
   );
