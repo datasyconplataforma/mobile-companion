@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X, Code, Search, Shield } from "lucide-react";
+import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X, Code, Search, Shield, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PromptListProps {
   projectId: string;
