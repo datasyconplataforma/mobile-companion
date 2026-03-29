@@ -286,14 +286,6 @@ Responda APENAS com as regras numeradas, sem introdução.`,
             <Plus size={13} />
             Adicionar
           </button>
-          <button
-            onClick={generateWithAI}
-            disabled={isGenerating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80 disabled:opacity-40 transition-all"
-          >
-            {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            Gerar com IA
-          </button>
         </div>
       </div>
 
