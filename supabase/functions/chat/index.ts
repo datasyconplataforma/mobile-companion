@@ -342,7 +342,9 @@ serve(async (req) => {
 2. Uma lista de tarefas de desenvolvimento (use save_tasks) 
 3. Prompts prontos para usar na Lovable (use save_prompts)
 
-IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponível (incluindo o PRD existente se houver) para gerar os documentos. SEMPRE chame as 3 ferramentas.`;
+IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponível (incluindo o PRD existente se houver) para gerar os documentos. SEMPRE chame as 3 ferramentas.
+
+REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.`;
         baseBody = {
           messages: [
             { role: "system", content: systemPrompt + generateInstruction },
@@ -411,11 +413,18 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
               saved.prd = true;
             }
             if (call.function.name === "save_tasks" && args.tasks) {
+              // Fetch existing tasks to preserve their status
+              const { data: existingTasks } = await supabase
+                .from("project_tasks")
+                .select("title, status")
+                .eq("project_id", projectId);
+              const statusMap = new Map((existingTasks || []).map((t: any) => [t.title.toLowerCase().trim(), t.status]));
+              
               await supabase.from("project_tasks").delete().eq("project_id", projectId);
               const taskRows = args.tasks.map((t: any, i: number) => ({
                 project_id: projectId, user_id: userId,
                 title: t.title, description: t.description || null,
-                sort_order: i, status: "todo",
+                sort_order: i, status: statusMap.get(t.title.toLowerCase().trim()) || "todo",
               }));
               await supabase.from("project_tasks").insert(taskRows);
               saved.tasks = true;
@@ -448,11 +457,17 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
               saved.prd = true;
             }
             if (parsed.tasks?.length) {
+              const { data: existingTasks } = await supabase
+                .from("project_tasks")
+                .select("title, status")
+                .eq("project_id", projectId);
+              const statusMap = new Map((existingTasks || []).map((t: any) => [t.title.toLowerCase().trim(), t.status]));
+              
               await supabase.from("project_tasks").delete().eq("project_id", projectId);
               const taskRows = parsed.tasks.map((t: any, i: number) => ({
                 project_id: projectId, user_id: userId,
                 title: t.title, description: t.description || null,
-                sort_order: i, status: "todo",
+                sort_order: i, status: statusMap.get(t.title.toLowerCase().trim()) || "todo",
               }));
               await supabase.from("project_tasks").insert(taskRows);
               saved.tasks = true;
