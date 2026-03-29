@@ -194,7 +194,7 @@ const ProjectPage = () => {
 
     try {
       const historyMessages = [
-        ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         { role: "user" as const, content },
       ];
 
