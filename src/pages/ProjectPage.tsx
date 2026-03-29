@@ -340,6 +340,7 @@ const ProjectPage = () => {
     { key: "prd", icon: FileText, label: "PRD" },
     { key: "tasks", icon: CheckSquare, label: "Tarefas" },
     { key: "prompts", icon: Zap, label: "Prompts" },
+    { key: "docs", icon: Paperclip, label: "Docs" },
   ];
 
   return (
