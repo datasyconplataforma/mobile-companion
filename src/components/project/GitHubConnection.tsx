@@ -76,9 +76,10 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
 
   const handleDisconnect = async () => {
     setSaving(true);
-    await supabase.from("projects").update({ github_repo_url: null } as any).eq("id", projectId);
+    await supabase.from("projects").update({ github_repo_url: null, github_token: null } as any).eq("id", projectId);
     setSaving(false);
     setRepoUrl("");
+    setToken("");
     setRepoTree(null);
     setAnalysisResult(null);
     onRepoUpdated();
