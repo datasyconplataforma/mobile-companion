@@ -30,11 +30,13 @@ const promptTabs: { key: PromptTab; label: string; icon: typeof Code }[] = [
 const PromptList = ({ projectId }: PromptListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", prompt_text: "", category: "general" });
   const [activePromptTab, setActivePromptTab] = useState<PromptTab>("implementation");
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const { data: prompts = [], isLoading } = useQuery({
     queryKey: ["prompts", projectId],
