@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { FileText, Pencil, Eye, Save, Loader2 } from "lucide-react";
+import { FileText, Pencil, Eye, Save, Loader2, RefreshCw } from "lucide-react";
 
 interface PRDViewProps {
   projectId: string;
   prdContent?: string | null;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
 }
 
 const PRDView = ({ projectId, prdContent }: PRDViewProps) => {
