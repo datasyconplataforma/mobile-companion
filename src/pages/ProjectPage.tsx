@@ -371,7 +371,9 @@ const ProjectPage = () => {
                 {messages.map((msg) => (
                   <ChatMessage
                     key={msg.id}
-                    message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at) }}
+                    message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at), excluded: !!(msg as any).excluded }}
+                    onDelete={handleDeleteMessage}
+                    onToggleExclude={handleToggleExclude}
                   />
                 ))}
                 {streamingContent && (
