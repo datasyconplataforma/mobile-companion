@@ -69,6 +69,32 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["tasks", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", id!)
+        .order("order_index", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: prompts = [] } = useQuery({
+    queryKey: ["prompts", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_prompts")
+        .select("*")
+        .eq("project_id", id!)
+        .order("order_index", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
@@ -96,6 +122,12 @@ const ProjectPage = () => {
         { role: "user" as const, content },
       ];
 
+      const projectContext = {
+        prd: project?.prd_content || "",
+        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
+        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+      };
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -103,7 +135,7 @@ const ProjectPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: historyMessages, projectId: id }),
+        body: JSON.stringify({ messages: historyMessages, projectContext }),
       });
 
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
