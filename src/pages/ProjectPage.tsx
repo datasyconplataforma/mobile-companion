@@ -11,6 +11,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import PRDView from "@/components/project/PRDView";
 import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
+import LLMSettings from "@/components/project/LLMSettings";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts";
 
@@ -205,7 +206,7 @@ const ProjectPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext() }),
+        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id }),
       });
 
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
@@ -327,6 +328,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <LLMSettings projectId={id!} />
         <button
           onClick={handleGenerate}
           disabled={isGenerating || isLoading || messages.length < 4}

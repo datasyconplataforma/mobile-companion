@@ -126,6 +126,178 @@ const tools = [
   },
 ];
 
+// Provider configurations
+interface ProviderConfig {
+  url: string;
+  headers: Record<string, string>;
+  transformBody: (body: any) => any;
+}
+
+function getProviderConfig(settings: any, lovableApiKey: string): ProviderConfig {
+  const provider = settings?.provider || "lovable";
+  const apiKey = settings?.api_key || "";
+  const baseUrl = settings?.base_url || "";
+  const model = settings?.model || "";
+
+  switch (provider) {
+    case "gemini":
+      return {
+        url: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        transformBody: (body: any) => ({
+          ...body,
+          model: model || "gemini-2.5-flash",
+        }),
+      };
+
+    case "openrouter":
+      return {
+        url: "https://openrouter.ai/api/v1/chat/completions",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://codebuddy.app",
+        },
+        transformBody: (body: any) => ({
+          ...body,
+          model: model || "google/gemini-2.5-flash-preview-05-20",
+        }),
+      };
+
+    case "claude":
+      return {
+        url: "https://api.anthropic.com/v1/messages",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        transformBody: (body: any) => {
+          // Convert OpenAI format to Anthropic format
+          const systemMsg = body.messages.find((m: any) => m.role === "system");
+          const otherMsgs = body.messages.filter((m: any) => m.role !== "system");
+          const transformed: any = {
+            model: model || "claude-sonnet-4-20250514",
+            max_tokens: 8192,
+            messages: otherMsgs,
+          };
+          if (systemMsg) transformed.system = systemMsg.content;
+          if (body.stream) transformed.stream = true;
+          // Tool calling for Anthropic format
+          if (body.tools) {
+            transformed.tools = body.tools.map((t: any) => ({
+              name: t.function.name,
+              description: t.function.description,
+              input_schema: t.function.parameters,
+            }));
+          }
+          return transformed;
+        },
+      };
+
+    case "ollama":
+      return {
+        url: `${baseUrl || "http://localhost:11434"}/v1/chat/completions`,
+        headers: { "Content-Type": "application/json" },
+        transformBody: (body: any) => ({
+          ...body,
+          model: model || "llama3.2",
+        }),
+      };
+
+    default: // lovable
+      return {
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        transformBody: (body: any) => ({
+          ...body,
+          model: model || "google/gemini-3-flash-preview",
+        }),
+      };
+  }
+}
+
+// Parse Claude streaming format to SSE format
+function transformClaudeStream(body: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+
+  return new ReadableStream({
+    async pull(controller) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+          return;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, idx).trim();
+          buffer = buffer.slice(idx + 1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6);
+          if (json === "[DONE]") {
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+            return;
+          }
+          try {
+            const parsed = JSON.parse(json);
+            if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+              const openaiChunk = {
+                choices: [{ delta: { content: parsed.delta.text }, index: 0 }],
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
+            }
+            if (parsed.type === "message_stop") {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              return;
+            }
+          } catch { /* skip */ }
+        }
+      }
+    },
+  });
+}
+
+// Parse Claude non-streaming response to extract tool calls in OpenAI format
+function transformClaudeResponse(claudeResult: any): any {
+  const content = claudeResult.content || [];
+  let textContent = "";
+  const toolCalls: any[] = [];
+
+  for (const block of content) {
+    if (block.type === "text") textContent += block.text;
+    if (block.type === "tool_use") {
+      toolCalls.push({
+        id: block.id,
+        type: "function",
+        function: { name: block.name, arguments: JSON.stringify(block.input) },
+      });
+    }
+  }
+
+  return {
+    choices: [{
+      message: {
+        content: textContent,
+        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+      },
+    }],
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -134,36 +306,53 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = buildSystemPrompt(projectContext || {});
+    // Load LLM settings for this project
+    let llmSettings: any = null;
+    if (projectId) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sbAdmin = createClient(supabaseUrl, supabaseKey);
+      const { data } = await sbAdmin
+        .from("project_llm_settings")
+        .select("*")
+        .eq("project_id", projectId)
+        .maybeSingle();
+      llmSettings = data;
+    }
 
-    // "generate" action: non-streaming with tool calling to save PRD/tasks/prompts
+    const providerConfig = getProviderConfig(llmSettings, LOVABLE_API_KEY);
+    const systemPrompt = buildSystemPrompt(projectContext || {});
+    const isClaude = llmSettings?.provider === "claude";
+
+    // "generate" action: non-streaming with tool calling
     if (action === "generate") {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const baseBody: any = {
+        messages: [
+          { role: "system", content: systemPrompt + "\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable. Use as ferramentas save_prd, save_tasks e save_prompts para salvar tudo." },
+          ...messages,
+        ],
+        tools,
+        tool_choice: "auto",
+      };
+
+      const requestBody = providerConfig.transformBody(baseBody);
+
+      const response = await fetch(providerConfig.url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt + "\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable. Use as ferramentas save_prd, save_tasks e save_prompts para salvar tudo." },
-            ...messages,
-          ],
-          tools,
-          tool_choice: "auto",
-        }),
+        headers: providerConfig.headers,
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const t = await response.text();
-        console.error("AI gateway error:", response.status, t);
-        return new Response(JSON.stringify({ error: "Erro ao gerar" }), {
+        console.error("AI provider error:", response.status, t);
+        return new Response(JSON.stringify({ error: `Erro do provedor (${response.status})` }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const result = await response.json();
+      const rawResult = await response.json();
+      const result = isClaude ? transformClaudeResponse(rawResult) : rawResult;
       const toolCalls = result.choices?.[0]?.message?.tool_calls || [];
       const contentText = result.choices?.[0]?.message?.content || "";
 
@@ -184,15 +373,11 @@ serve(async (req) => {
           }
 
           if (call.function.name === "save_tasks" && args.tasks) {
-            // Clear existing tasks first
             await supabase.from("project_tasks").delete().eq("project_id", projectId);
             const taskRows = args.tasks.map((t: any, i: number) => ({
-              project_id: projectId,
-              user_id: userId,
-              title: t.title,
-              description: t.description || null,
-              sort_order: i,
-              status: "todo",
+              project_id: projectId, user_id: userId,
+              title: t.title, description: t.description || null,
+              sort_order: i, status: "todo",
             }));
             await supabase.from("project_tasks").insert(taskRows);
             saved.tasks = true;
@@ -201,12 +386,9 @@ serve(async (req) => {
           if (call.function.name === "save_prompts" && args.prompts) {
             await supabase.from("project_prompts").delete().eq("project_id", projectId);
             const promptRows = args.prompts.map((p: any, i: number) => ({
-              project_id: projectId,
-              user_id: userId,
-              title: p.title,
-              prompt_text: p.prompt_text,
-              category: p.category || "general",
-              sort_order: i,
+              project_id: projectId, user_id: userId,
+              title: p.title, prompt_text: p.prompt_text,
+              category: p.category || "general", sort_order: i,
             }));
             await supabase.from("project_prompts").insert(promptRows);
             saved.prompts = true;
@@ -222,20 +404,20 @@ serve(async (req) => {
     }
 
     // Default: streaming chat
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const baseBody: any = {
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages,
+      ],
+      stream: true,
+    };
+
+    const requestBody = providerConfig.transformBody(baseBody);
+
+    const response = await fetch(providerConfig.url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
-        stream: true,
-      }),
+      headers: providerConfig.headers,
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -250,13 +432,18 @@ serve(async (req) => {
         });
       }
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no gateway de IA" }), {
+      console.error("AI provider error:", response.status, t);
+      return new Response(JSON.stringify({ error: "Erro no provedor de IA" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(response.body, {
+    // Claude has a different streaming format - transform it
+    const responseBody = isClaude && response.body
+      ? transformClaudeStream(response.body)
+      : response.body;
+
+    return new Response(responseBody, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
