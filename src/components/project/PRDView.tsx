@@ -2,14 +2,16 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { FileText, Pencil, Eye, Save, Loader2 } from "lucide-react";
+import { FileText, Pencil, Eye, Save, Loader2, RefreshCw } from "lucide-react";
 
 interface PRDViewProps {
   projectId: string;
   prdContent?: string | null;
+  onRegenerate?: () => void;
+  isRegenerating?: boolean;
 }
 
-const PRDView = ({ projectId, prdContent }: PRDViewProps) => {
+const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDViewProps) => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(prdContent || "");
@@ -74,13 +76,25 @@ const PRDView = ({ projectId, prdContent }: PRDViewProps) => {
             </button>
           </>
         ) : (
-          <button
-            onClick={startEdit}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground bg-secondary transition-colors"
-          >
-            <Pencil size={13} />
-            Editar
-          </button>
+          <div className="flex items-center gap-2">
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground disabled:opacity-50 transition-colors"
+              >
+                {isRegenerating ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                Atualizar PRD
+              </button>
+            )}
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground bg-secondary transition-colors"
+            >
+              <Pencil size={13} />
+              Editar
+            </button>
+          </div>
         )}
       </div>
 
