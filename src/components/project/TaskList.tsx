@@ -10,13 +10,13 @@ interface TaskListProps {
 
 const statusIcons = {
   todo: Circle,
-  in_progress: Loader2,
+  in_progress: Clock,
   done: CheckCircle2,
 };
 
 const statusStyles = {
-  todo: "text-muted-foreground",
-  in_progress: "text-yellow-400 animate-spin",
+  todo: "text-muted-foreground hover:text-foreground",
+  in_progress: "text-yellow-400",
   done: "text-primary",
 };
 
