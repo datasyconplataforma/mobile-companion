@@ -26,12 +26,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
   return (
     <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-card">
       <div className="flex items-end gap-2 max-w-2xl mx-auto">
-        <button
-          type="button"
-          className="shrink-0 w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Plus size={18} />
-        </button>
         <div className="flex-1 relative">
           <textarea
             value={input}
