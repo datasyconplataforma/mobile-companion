@@ -80,6 +80,19 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: documents = [] } = useQuery({
+    queryKey: ["documents", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_documents")
+        .select("*")
+        .eq("project_id", id!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
