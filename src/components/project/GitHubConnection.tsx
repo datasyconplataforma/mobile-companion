@@ -91,10 +91,12 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
     if (!parsed) return;
     setLoadingTree(true);
     try {
-      const resp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/main?recursive=1`);
+      const headers: Record<string, string> = { "User-Agent": "CodeBuddy-App" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const resp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/main?recursive=1`, { headers });
       if (!resp.ok) {
-        const resp2 = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/master?recursive=1`);
-        if (!resp2.ok) throw new Error("Não foi possível acessar o repositório. Verifique se é público.");
+        const resp2 = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/master?recursive=1`, { headers });
+        if (!resp2.ok) throw new Error("Não foi possível acessar o repositório. Verifique a URL e o token.");
         const data = await resp2.json();
         setRepoTree(data.tree?.filter((t: any) => t.type === "blob").map((t: any) => t.path) || []);
       } else {
