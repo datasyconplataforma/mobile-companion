@@ -122,6 +122,12 @@ const ProjectPage = () => {
         { role: "user" as const, content },
       ];
 
+      const projectContext = {
+        prd: project?.prd_content || "",
+        tasks: tasks.map((t) => ({ title: t.title, completed: t.completed })),
+        prompts: prompts.map((p) => ({ title: p.title, content: p.content })),
+      };
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -129,7 +135,7 @@ const ProjectPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: historyMessages, projectId: id }),
+        body: JSON.stringify({ messages: historyMessages, projectContext }),
       });
 
       if (!resp.ok || !resp.body) throw new Error("Failed to start stream");
