@@ -76,13 +76,25 @@ const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDVie
             </button>
           </>
         ) : (
-          <button
-            onClick={startEdit}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground bg-secondary transition-colors"
-          >
-            <Pencil size={13} />
-            Editar
-          </button>
+          <div className="flex items-center gap-2">
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground disabled:opacity-50 transition-colors"
+              >
+                {isRegenerating ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                Atualizar PRD
+              </button>
+            )}
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground bg-secondary transition-colors"
+            >
+              <Pencil size={13} />
+              Editar
+            </button>
+          </div>
         )}
       </div>
 
