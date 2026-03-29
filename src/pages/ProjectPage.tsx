@@ -124,8 +124,8 @@ const ProjectPage = () => {
 
       const projectContext = {
         prd: project?.prd_content || "",
-        tasks: tasks.map((t) => ({ title: t.title, completed: t.completed })),
-        prompts: prompts.map((p) => ({ title: p.title, content: p.content })),
+        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
+        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
       };
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
