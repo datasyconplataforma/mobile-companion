@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Send, Plus } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
