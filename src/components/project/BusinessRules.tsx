@@ -84,6 +84,77 @@ const BusinessRules = ({ projectId }: BusinessRulesProps) => {
     saveToDb(updated);
   };
 
+  const handleImproveWithAI = async () => {
+    if (!newRule.trim()) {
+      toast({ title: "Aviso", description: "Digite uma regra para a IA melhorar.", variant: "destructive" });
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("prd_content, name")
+        .eq("id", projectId)
+        .single();
+
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "user",
+              content: `Melhore e refine a seguinte regra de negócio para o projeto "${project?.name}". Torne-a mais clara, objetiva e profissional. Mantenha o mesmo sentido original. Responda APENAS com o texto da regra melhorada, sem numeração, sem introdução, sem explicação.\n\nRegra original: "${newRule.trim()}"${project?.prd_content ? `\n\nContexto do PRD:\n${project.prd_content}` : ""}`,
+            },
+          ],
+          projectContext: { prd: project?.prd_content || "" },
+          projectId,
+        }),
+      });
+
+      if (!resp.ok || !resp.body) throw new Error("Failed");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(json);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) full += delta;
+          } catch {}
+        }
+      }
+
+      const improved = full.replace(/^\d+\.\s*/, "").trim();
+      if (improved) {
+        setNewRule(improved);
+        toast({ title: "Melhorado! ✨", description: "Revise e salve a regra." });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Falha ao melhorar regra.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleDelete = (index: number) => {
     const updated = rules.filter((_, i) => i !== index);
     setRules(updated);
