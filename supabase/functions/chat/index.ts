@@ -457,11 +457,17 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
               saved.prd = true;
             }
             if (parsed.tasks?.length) {
+              const { data: existingTasks } = await supabase
+                .from("project_tasks")
+                .select("title, status")
+                .eq("project_id", projectId);
+              const statusMap = new Map((existingTasks || []).map((t: any) => [t.title.toLowerCase().trim(), t.status]));
+              
               await supabase.from("project_tasks").delete().eq("project_id", projectId);
               const taskRows = parsed.tasks.map((t: any, i: number) => ({
                 project_id: projectId, user_id: userId,
                 title: t.title, description: t.description || null,
-                sort_order: i, status: "todo",
+                sort_order: i, status: statusMap.get(t.title.toLowerCase().trim()) || "todo",
               }));
               await supabase.from("project_tasks").insert(taskRows);
               saved.tasks = true;
