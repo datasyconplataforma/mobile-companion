@@ -181,87 +181,8 @@ const BusinessRules = ({ projectId }: BusinessRulesProps) => {
     setEditValue("");
   };
 
-  const generateWithAI = async () => {
-    setIsGenerating(true);
-    try {
-      const { data: project } = await supabase
-        .from("projects")
-        .select("prd_content, name")
-        .eq("id", projectId)
-        .single();
 
-      const { data: messages } = await supabase
-        .from("chat_messages")
-        .select("role, content")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: true })
-        .limit(20);
 
-      const existingContent = serializeRules(rules);
-      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            ...(messages || []).map((m) => ({ role: m.role, content: m.content })),
-            {
-              role: "user",
-              content: `Baseado no PRD e na conversa, gere uma lista completa de REGRAS DE NEGÓCIO para o projeto "${project?.name}". 
-Formato: lista numerada com regras claras e objetivas. Inclua validações, permissões, limites, fluxos obrigatórios e restrições.
-${existingContent ? `\n\nRegras existentes para complementar:\n${existingContent}` : ""}
-${project?.prd_content ? `\n\nPRD:\n${project.prd_content}` : ""}
-Responda APENAS com as regras numeradas, sem introdução.`,
-            },
-          ],
-          projectContext: { prd: project?.prd_content || "" },
-          projectId,
-        }),
-      });
-
-      if (!resp.ok || !resp.body) throw new Error("Failed");
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let full = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        let idx: number;
-        while ((idx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(json);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) full += delta;
-          } catch {}
-        }
-      }
-
-      const generated = full
-        .split("\n")
-        .map((l) => l.replace(/^\d+\.\s*/, "").trim())
-        .filter((l) => l.length > 0);
-      setRules(generated);
-      saveToDb(generated);
-      toast({ title: "Gerado! ✨", description: "Revise as regras geradas." });
-    } catch {
-      toast({ title: "Erro", description: "Falha ao gerar regras.", variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   if (isLoading) {
     return (
