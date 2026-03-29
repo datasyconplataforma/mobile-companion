@@ -31,8 +31,16 @@ Seja conciso, amigável e focado. Use markdown com formatação clara. Responda 
 
 IMPORTANTE: Você tem acesso ao contexto completo do projeto abaixo. Use essas informações para dar respostas mais precisas e evitar perguntas repetidas.`;
 
-function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[] }): string {
+function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[]; skills?: string[]; businessRules?: string }): string {
   let prompt = BASE_SYSTEM_PROMPT;
+
+  if (context.skills && context.skills.length > 0) {
+    prompt += `\n\n---\n## SKILLS / TECNOLOGIAS DO PROJETO:\n${context.skills.join(", ")}`;
+  }
+
+  if (context.businessRules && context.businessRules.trim()) {
+    prompt += `\n\n---\n## REGRAS DE NEGÓCIO DO PROJETO:\n${context.businessRules}`;
+  }
 
   if (context.prd && context.prd.trim()) {
     prompt += `\n\n---\n## PRD ATUAL DO PROJETO:\n${context.prd}`;
