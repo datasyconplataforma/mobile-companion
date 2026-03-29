@@ -5,7 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Github, Loader2, Link2, Unlink, Search, FileCode, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Github, Loader2, Link2, Unlink, Search, FileCode, AlertTriangle, CheckCircle2, Eye, EyeOff, KeyRound } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
@@ -30,6 +31,8 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [repoUrl, setRepoUrl] = useState(githubRepoUrl || "");
+  const [token, setToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
@@ -41,8 +44,14 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
       setRepoUrl(githubRepoUrl || "");
       setAnalysisResult(null);
       setRepoTree(null);
+      // Load saved token
+      if (projectId) {
+        supabase.from("projects").select("github_token").eq("id", projectId).single().then(({ data }) => {
+          setToken((data as any)?.github_token || "");
+        });
+      }
     }
-  }, [open, githubRepoUrl]);
+  }, [open, githubRepoUrl, projectId]);
 
   const handleSaveRepo = async () => {
     if (!user) return;
@@ -54,7 +63,7 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
     setSaving(true);
     const { error } = await supabase
       .from("projects")
-      .update({ github_repo_url: repoUrl || null } as any)
+      .update({ github_repo_url: repoUrl || null, github_token: token || null } as any)
       .eq("id", projectId);
     setSaving(false);
     if (error) {
@@ -67,9 +76,10 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
 
   const handleDisconnect = async () => {
     setSaving(true);
-    await supabase.from("projects").update({ github_repo_url: null } as any).eq("id", projectId);
+    await supabase.from("projects").update({ github_repo_url: null, github_token: null } as any).eq("id", projectId);
     setSaving(false);
     setRepoUrl("");
+    setToken("");
     setRepoTree(null);
     setAnalysisResult(null);
     onRepoUpdated();
@@ -81,10 +91,12 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
     if (!parsed) return;
     setLoadingTree(true);
     try {
-      const resp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/main?recursive=1`);
+      const headers: Record<string, string> = { "User-Agent": "CodeBuddy-App" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const resp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/main?recursive=1`, { headers });
       if (!resp.ok) {
-        const resp2 = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/master?recursive=1`);
-        if (!resp2.ok) throw new Error("Não foi possível acessar o repositório. Verifique se é público.");
+        const resp2 = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/master?recursive=1`, { headers });
+        if (!resp2.ok) throw new Error("Não foi possível acessar o repositório. Verifique a URL e o token.");
         const data = await resp2.json();
         setRepoTree(data.tree?.filter((t: any) => t.type === "blob").map((t: any) => t.path) || []);
       } else {
@@ -152,12 +164,40 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
           {/* Connection section */}
           {!isConnected ? (
             <div className="space-y-3">
-              <Input
-                value={repoUrl}
-                onChange={(e) => setRepoUrl(e.target.value)}
-                placeholder="https://github.com/owner/repo"
-                className="font-mono text-xs"
-              />
+              <div>
+                <Label className="text-xs">URL do Repositório</Label>
+                <Input
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  placeholder="https://github.com/owner/repo"
+                  className="font-mono text-xs mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1.5">
+                  <KeyRound size={12} />
+                  Token (opcional — para repos privados)
+                </Label>
+                <div className="relative mt-1">
+                  <Input
+                    type={showToken ? "text" : "password"}
+                    value={token}
+                    onChange={(e) => setToken(e.target.value)}
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    className="font-mono text-xs pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Crie em GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens (permissão: Contents read-only)
+                </p>
+              </div>
               <Button onClick={handleSaveRepo} disabled={saving || !repoUrl} className="w-full" size="sm">
                 {saving ? <Loader2 size={14} className="animate-spin mr-1" /> : <Link2 size={14} className="mr-1" />}
                 Conectar Repositório

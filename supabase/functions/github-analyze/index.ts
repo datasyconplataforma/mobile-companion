@@ -42,19 +42,25 @@ serve(async (req) => {
       sb.from("project_skills").select("*").eq("project_id", projectId),
     ]);
 
+    // Build GitHub headers (with optional token for private repos)
+    const ghHeaders: Record<string, string> = { "User-Agent": "CodeBuddy-App" };
+    if (project.github_token) {
+      ghHeaders["Authorization"] = `Bearer ${project.github_token}`;
+    }
+
     // Fetch repo tree from GitHub
     let tree: any[] = [];
     let branch = "main";
     let treeResp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/main?recursive=1`, {
-      headers: { "User-Agent": "CodeBuddy-App" },
+      headers: ghHeaders,
     });
     if (!treeResp.ok) {
       branch = "master";
       treeResp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/git/trees/master?recursive=1`, {
-        headers: { "User-Agent": "CodeBuddy-App" },
+        headers: ghHeaders,
       });
     }
-    if (!treeResp.ok) throw new Error("Não foi possível acessar o repositório. Verifique se é público.");
+    if (!treeResp.ok) throw new Error("Não foi possível acessar o repositório. Verifique a URL e o token.");
     const treeData = await treeResp.json();
     tree = (treeData.tree || []).filter((t: any) => t.type === "blob").map((t: any) => t.path);
 
@@ -66,7 +72,7 @@ serve(async (req) => {
       if (tree.includes(file)) {
         try {
           const fileResp = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/${file}?ref=${branch}`, {
-            headers: { "User-Agent": "CodeBuddy-App", Accept: "application/vnd.github.v3.raw" },
+            headers: { ...ghHeaders, Accept: "application/vnd.github.v3.raw" },
           });
           if (fileResp.ok) {
             const content = await fileResp.text();
