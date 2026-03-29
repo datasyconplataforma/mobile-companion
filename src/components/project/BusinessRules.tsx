@@ -11,7 +11,7 @@ interface BusinessRulesProps {
 }
 
 const BusinessRules = ({ projectId }: BusinessRulesProps) => {
-  const { user } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [content, setContent] = useState("");
