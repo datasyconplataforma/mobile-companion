@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN github_repo_url text DEFAULT NULL;
