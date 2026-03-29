@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Terminal, Plus, LogOut, FolderOpen, Loader2 } from "lucide-react";
+import { Terminal, Plus, LogOut, FolderOpen, Loader2, Trash2, Pencil, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const statusLabels: Record<string, string> = {
@@ -14,10 +14,10 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  planning: "bg-terminal-yellow/20 text-terminal-yellow",
-  prd_ready: "bg-terminal-cyan/20 text-terminal-cyan",
+  planning: "bg-yellow-500/20 text-yellow-400",
+  prd_ready: "bg-cyan-500/20 text-cyan-400",
   building: "bg-primary/20 text-primary",
-  done: "bg-terminal-green/20 text-terminal-green",
+  done: "bg-green-500/20 text-green-400",
 };
 
 const DashboardPage = () => {
@@ -27,6 +27,9 @@ const DashboardPage = () => {
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
@@ -61,9 +64,36 @@ const DashboardPage = () => {
     },
   });
 
+  const renameProject = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from("projects").update({ name }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setEditingId(null);
+    },
+  });
+
+  const deleteProject = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("projects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setDeletingId(null);
+      toast({ title: "Projeto excluído" });
+    },
+  });
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (newName.trim()) createProject.mutate(newName.trim());
+  };
+
+  const handleRename = (id: string) => {
+    if (editName.trim()) renameProject.mutate({ id, name: editName.trim() });
   };
 
   return (
@@ -107,18 +137,10 @@ const DashboardPage = () => {
                 placeholder="Nome do projeto..."
                 className="flex-1 px-3 py-2 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
-              <button
-                type="submit"
-                disabled={createProject.isPending}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
-              >
+              <button type="submit" disabled={createProject.isPending} className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">
                 Criar
               </button>
-              <button
-                type="button"
-                onClick={() => { setShowNew(false); setNewName(""); }}
-                className="px-3 py-2 rounded-xl bg-secondary text-muted-foreground text-sm"
-              >
+              <button type="button" onClick={() => { setShowNew(false); setNewName(""); }} className="px-3 py-2 rounded-xl bg-secondary text-muted-foreground text-sm">
                 ✕
               </button>
             </form>
@@ -137,24 +159,74 @@ const DashboardPage = () => {
           ) : (
             <div className="space-y-2">
               {projects?.map((project) => (
-                <button
+                <div
                   key={project.id}
-                  onClick={() => navigate(`/project/${project.id}`)}
-                  className="w-full text-left p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:shadow-glow transition-all"
+                  className="relative p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:shadow-glow transition-all group"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold text-sm text-foreground">{project.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[project.status]}`}>
-                      {statusLabels[project.status]}
-                    </span>
-                  </div>
-                  {project.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{project.description}</p>
+                  {/* Delete confirmation */}
+                  {deletingId === project.id && (
+                    <div className="absolute inset-0 bg-card/95 backdrop-blur-sm rounded-xl flex items-center justify-center gap-3 z-10">
+                      <span className="text-sm text-foreground">Excluir projeto?</span>
+                      <button
+                        onClick={() => deleteProject.mutate(project.id)}
+                        className="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium"
+                      >
+                        Excluir
+                      </button>
+                      <button
+                        onClick={() => setDeletingId(null)}
+                        className="px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground text-xs"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   )}
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {new Date(project.updated_at).toLocaleDateString("pt-BR")}
-                  </p>
-                </button>
+
+                  <div className="flex items-center justify-between mb-1">
+                    {editingId === project.id ? (
+                      <div className="flex items-center gap-1.5 flex-1 mr-2">
+                        <input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleRename(project.id)}
+                          className="flex-1 px-2 py-0.5 rounded bg-secondary text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        <button onClick={() => handleRename(project.id)} className="p-1 text-primary"><Check size={14} /></button>
+                        <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground"><X size={14} /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => navigate(`/project/${project.id}`)} className="text-left flex-1">
+                        <h3 className="font-semibold text-sm text-foreground">{project.name}</h3>
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[project.status] || statusColors.planning}`}>
+                        {statusLabels[project.status] || "Planejando"}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
+                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
+                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={() => navigate(`/project/${project.id}`)} className="w-full text-left">
+                    {project.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{project.description}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2 font-mono">
+                      {new Date(project.updated_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </button>
+                </div>
               ))}
             </div>
           )}

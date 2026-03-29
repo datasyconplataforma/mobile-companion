@@ -37,7 +37,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pergunte sobre código..."
+            placeholder="Descreva seu app ou peça uma atualização..."
             rows={1}
             className="w-full resize-none bg-secondary text-foreground placeholder:text-muted-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring scrollbar-thin font-sans"
             style={{ maxHeight: "120px" }}
