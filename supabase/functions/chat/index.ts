@@ -381,6 +381,7 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
       }
 
       const rawResult = await response.json();
+      console.log("AI generate response:", JSON.stringify(rawResult).slice(0, 2000));
       
       // Process tool calls and save to database
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -393,6 +394,7 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
         const result = isClaude ? transformClaudeResponse(rawResult) : rawResult;
         const toolCalls = result.choices?.[0]?.message?.tool_calls || [];
         contentText = result.choices?.[0]?.message?.content || "";
+        console.log("Tool calls count:", toolCalls.length, "Content length:", contentText.length);
 
         for (const call of toolCalls) {
           try {
