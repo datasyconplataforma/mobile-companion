@@ -248,6 +248,7 @@ const PromptList = ({ projectId }: PromptListProps) => {
           </button>
         )}
       </div>
+      </div>
     </div>
   );
 };
