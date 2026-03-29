@@ -118,6 +118,53 @@ const PromptList = ({ projectId }: PromptListProps) => {
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    try {
+      const { data: project } = await supabase.from("projects").select("prd_content").eq("id", projectId).single();
+      const { data: msgs } = await supabase.from("chat_messages").select("role, content").eq("project_id", projectId).order("created_at", { ascending: true }).limit(30);
+      const { data: tasks } = await supabase.from("project_tasks").select("title, description").eq("project_id", projectId);
+      const { data: docs } = await supabase.from("project_documents").select("file_name, extracted_text").eq("project_id", projectId);
+      const { data: skills } = await supabase.from("project_skills" as any).select("name").eq("project_id", projectId);
+      const { data: rules } = await supabase.from("project_business_rules" as any).select("content").eq("project_id", projectId).maybeSingle();
+
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            ...(msgs || []).map((m) => ({ role: m.role, content: m.content })),
+            { role: "user", content: "Atualize os prompts do projeto. Use as ferramentas para salvar." },
+          ],
+          projectContext: {
+            prd: project?.prd_content || "",
+            tasks: (tasks || []).map((t) => ({ title: t.title, completed: false })),
+            prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+            documents: (docs || []).filter((d) => d.extracted_text).map((d) => ({ name: d.file_name, content: d.extracted_text })),
+            skills: ((skills || []) as any[]).map((s: any) => s.name),
+            businessRules: (rules as any)?.content || "",
+          },
+          projectId,
+          userId: user!.id,
+          action: "generate",
+        }),
+      });
+
+      if (!resp.ok) throw new Error("Failed");
+      await resp.json();
+
+      queryClient.invalidateQueries({ queryKey: ["prompts", projectId] });
+      toast({ title: "Prompts atualizados! ✨" });
+    } catch {
+      toast({ title: "Erro", description: "Falha ao atualizar prompts.", variant: "destructive" });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -130,21 +177,31 @@ const PromptList = ({ projectId }: PromptListProps) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Sub-tabs */}
-      <div className="shrink-0 flex border-b border-border bg-card/30 px-4">
-        {promptTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => { setActivePromptTab(tab.key); resetForm(); }}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
-              activePromptTab === tab.key
-                ? "text-primary border-primary"
-                : "text-muted-foreground border-transparent hover:text-foreground"
-            }`}
-          >
-            <tab.icon size={13} />
-            {tab.label}
-          </button>
-        ))}
+      <div className="shrink-0 flex items-center border-b border-border bg-card/30 px-4">
+        <div className="flex flex-1">
+          {promptTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => { setActivePromptTab(tab.key); resetForm(); }}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
+                activePromptTab === tab.key
+                  ? "text-primary border-primary"
+                  : "text-muted-foreground border-transparent hover:text-foreground"
+              }`}
+            >
+              <tab.icon size={13} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={handleRegenerate}
+          disabled={isRegenerating}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all"
+        >
+          {isRegenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+          Atualizar
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
