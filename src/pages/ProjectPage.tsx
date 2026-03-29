@@ -265,7 +265,7 @@ const ProjectPage = () => {
 
     setIsGenerating(true);
     try {
-      const historyMessages = messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const historyMessages = messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
