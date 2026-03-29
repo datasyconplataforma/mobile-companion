@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
 import TypingIndicator from "@/components/chat/TypingIndicator";
@@ -13,34 +14,16 @@ import PromptList from "@/components/project/PromptList";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts";
 
-const SYSTEM_PROMPT = `Você é o CodeBuddy, o melhor assistente para planejar e construir aplicativos na Lovable.
-
-Seu papel é guiar o usuário na construção de um PRD (Product Requirements Document) completo. Faça perguntas estratégicas uma de cada vez para entender:
-
-1. **Objetivo do app** — O que ele faz? Qual problema resolve?
-2. **Público-alvo** — Quem vai usar?
-3. **Funcionalidades principais** — Liste as features essenciais
-4. **Stack técnica** — Lovable usa React + Vite + Tailwind + TypeScript + Supabase
-5. **Design e UX** — Estilo visual, tema, referências
-6. **Autenticação** — Precisa de login? Que tipo?
-7. **Dados** — Quais tabelas e relações no banco?
-8. **Integrações** — APIs externas, pagamentos, etc?
-
-Após coletar informações suficientes, gere:
-- Um PRD estruturado em markdown
-- Uma checklist de tarefas para construir o app
-- Prompts prontos para usar na Lovable (um por funcionalidade)
-
-Seja conciso, amigável e focado. Use markdown com formatação clara. Responda em português.`;
-
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
 
   const { data: project } = useQuery({
@@ -187,6 +170,66 @@ const ProjectPage = () => {
     }
   };
 
+  const handleGenerate = async () => {
+    if (messages.length < 4) {
+      toast({ title: "Continue conversando", description: "A IA precisa de mais contexto para gerar o PRD. Continue descrevendo seu projeto no chat!" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const historyMessages = messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const projectContext = {
+        prd: project?.prd_content || "",
+        tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
+        prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
+      };
+
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: historyMessages,
+          projectContext,
+          projectId: id,
+          userId: user!.id,
+          action: "generate",
+        }),
+      });
+
+      if (!resp.ok) throw new Error("Failed to generate");
+
+      const result = await resp.json();
+      const savedItems: string[] = [];
+      if (result.saved?.prd) savedItems.push("PRD");
+      if (result.saved?.tasks) savedItems.push("Tarefas");
+      if (result.saved?.prompts) savedItems.push("Prompts");
+
+      // Invalidate all queries
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+
+      if (savedItems.length > 0) {
+        toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
+        // Save a system message about the generation
+        await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}` });
+        queryClient.invalidateQueries({ queryKey: ["messages", id] });
+      } else {
+        toast({ title: "Aviso", description: "A IA não conseguiu gerar os documentos. Tente dar mais detalhes no chat.", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Generate error:", err);
+      toast({ title: "Erro", description: "Falha ao gerar documentos. Tente novamente.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
     { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "prd", icon: FileText, label: "PRD" },
@@ -204,6 +247,14 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating || isLoading || messages.length < 4}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all"
+        >
+          {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+          Gerar PRD
+        </button>
       </header>
 
       {/* Tabs */}

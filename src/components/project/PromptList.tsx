@@ -1,22 +1,30 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Zap, Copy, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Zap, Copy, Check, Loader2, Plus, Trash2, Pencil, X } from "lucide-react";
 
 interface PromptListProps {
   projectId: string;
 }
 
 const categoryColors: Record<string, string> = {
-  setup: "bg-terminal-cyan/20 text-terminal-cyan",
+  setup: "bg-cyan-500/20 text-cyan-400",
   feature: "bg-primary/20 text-primary",
-  ui: "bg-terminal-pink/20 text-terminal-pink",
-  backend: "bg-terminal-orange/20 text-terminal-orange",
-  general: "bg-terminal-yellow/20 text-terminal-yellow",
+  ui: "bg-pink-500/20 text-pink-400",
+  backend: "bg-orange-500/20 text-orange-400",
+  general: "bg-yellow-500/20 text-yellow-400",
 };
 
+const categories = ["general", "setup", "feature", "ui", "backend"];
+
 const PromptList = ({ projectId }: PromptListProps) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ title: "", prompt_text: "", category: "general" });
 
   const { data: prompts = [], isLoading } = useQuery({
     queryKey: ["prompts", projectId],
@@ -30,6 +38,65 @@ const PromptList = ({ projectId }: PromptListProps) => {
       return data;
     },
   });
+
+  const addPrompt = useMutation({
+    mutationFn: async (input: { title: string; prompt_text: string; category: string }) => {
+      const { error } = await supabase.from("project_prompts").insert({
+        project_id: projectId,
+        user_id: user!.id,
+        title: input.title,
+        prompt_text: input.prompt_text,
+        category: input.category,
+        sort_order: prompts.length,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prompts", projectId] });
+      resetForm();
+    },
+  });
+
+  const updatePrompt = useMutation({
+    mutationFn: async ({ id, ...input }: { id: string; title: string; prompt_text: string; category: string }) => {
+      const { error } = await supabase.from("project_prompts").update(input).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prompts", projectId] });
+      resetForm();
+    },
+  });
+
+  const deletePrompt = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("project_prompts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["prompts", projectId] }),
+  });
+
+  const resetForm = () => {
+    setShowAdd(false);
+    setEditingId(null);
+    setForm({ title: "", prompt_text: "", category: "general" });
+  };
+
+  const startEdit = (prompt: any) => {
+    setEditingId(prompt.id);
+    setShowAdd(true);
+    setForm({ title: prompt.title, prompt_text: prompt.prompt_text, category: prompt.category });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.prompt_text.trim()) return;
+    if (editingId) {
+      updatePrompt.mutate({ id: editingId, ...form });
+    } else {
+      addPrompt.mutate(form);
+    }
+  };
 
   const handleCopy = async (id: string, text: string) => {
     await navigator.clipboard.writeText(text);
@@ -45,41 +112,110 @@ const PromptList = ({ projectId }: PromptListProps) => {
     );
   }
 
-  if (prompts.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <Zap size={32} className="text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground text-center max-w-xs">
-          Os prompts prontos para a Lovable serão gerados após a construção do PRD. Continue no chat!
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-      <div className="max-w-lg mx-auto space-y-3">
-        {prompts.map((prompt) => (
-          <div key={prompt.id} className="p-4 rounded-xl bg-card border border-border">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-foreground">{prompt.title}</h3>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors[prompt.category]}`}>
-                  {prompt.category}
-                </span>
+      <div className="max-w-lg mx-auto">
+        {prompts.length === 0 && !showAdd ? (
+          <div className="text-center py-12">
+            <Zap size={32} className="mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground mb-1">Nenhum prompt ainda.</p>
+            <p className="text-xs text-muted-foreground">Adicione manualmente ou peça à IA no chat.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {prompts.map((prompt) => (
+              <div key={prompt.id} className="p-4 rounded-xl bg-card border border-border group">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-foreground">{prompt.title}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors[prompt.category] || categoryColors.general}`}>
+                      {prompt.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => startEdit(prompt)}
+                      className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => deletePrompt.mutate(prompt.id)}
+                      className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary text-muted-foreground hover:text-destructive transition-all"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleCopy(prompt.id, prompt.prompt_text)}
+                      className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {copiedId === prompt.id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
+                  {prompt.prompt_text}
+                </p>
               </div>
-              <button
-                onClick={() => handleCopy(prompt.id, prompt.prompt_text)}
-                className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {copiedId === prompt.id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+            ))}
+          </div>
+        )}
+
+        {/* Add/Edit form */}
+        {showAdd ? (
+          <form onSubmit={handleSubmit} className="mt-3 p-4 rounded-xl bg-card border border-primary/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">{editingId ? "Editar prompt" : "Novo prompt"}</span>
+              <button type="button" onClick={resetForm} className="p-1 text-muted-foreground hover:text-foreground">
+                <X size={16} />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
-              {prompt.prompt_text}
-            </p>
-          </div>
-        ))}
+            <input
+              autoFocus
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Título do prompt..."
+              className="w-full px-3 py-2 rounded-lg bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <textarea
+              value={form.prompt_text}
+              onChange={(e) => setForm({ ...form, prompt_text: e.target.value })}
+              placeholder="Texto do prompt para a Lovable..."
+              rows={4}
+              className="w-full px-3 py-2 rounded-lg bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none font-mono"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Categoria:</span>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setForm({ ...form, category: cat })}
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
+                    form.category === cat ? categoryColors[cat] : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button
+              type="submit"
+              disabled={!form.title.trim() || !form.prompt_text.trim()}
+              className="w-full py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50"
+            >
+              {editingId ? "Salvar" : "Criar prompt"}
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/40 text-sm transition-all"
+          >
+            <Plus size={14} />
+            Adicionar prompt
+          </button>
+        )}
       </div>
     </div>
   );
