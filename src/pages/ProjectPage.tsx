@@ -16,6 +16,7 @@ import DocumentList from "@/components/project/DocumentList";
 import SkillList from "@/components/project/SkillList";
 import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
+import GitHubConnection from "@/components/project/GitHubConnection";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
