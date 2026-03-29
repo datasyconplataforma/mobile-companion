@@ -419,6 +419,7 @@ const ProjectPage = () => {
       {activeTab === "prd" && <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
+      {activeTab === "docs" && <DocumentList projectId={id!} />}
     </div>
   );
 };
