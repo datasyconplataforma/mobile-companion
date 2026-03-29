@@ -11,6 +11,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import PRDView from "@/components/project/PRDView";
 import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
+import LLMSettings from "@/components/project/LLMSettings";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts";
 
