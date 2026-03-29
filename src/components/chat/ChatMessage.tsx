@@ -4,17 +4,26 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CopyButton from "./CopyButton";
 import { Message } from "@/types/chat";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Trash2, EyeOff, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ChatMessageProps {
   message: Message;
+  onDelete?: (id: string) => void;
+  onToggleExclude?: (id: string, excluded: boolean) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude }) => {
   const isUser = message.role === "user";
+  const isExcluded = message.excluded;
+  const isStreaming = message.id === "streaming";
 
   return (
-    <div className={`flex gap-3 px-4 py-3 ${isUser ? "" : "bg-card/50"}`}>
+    <div
+      className={`group relative flex gap-3 px-4 py-3 transition-opacity ${
+        isUser ? "" : "bg-card/50"
+      } ${isExcluded ? "opacity-40" : ""}`}
+    >
       <div
         className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold ${
           isUser
@@ -25,6 +34,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         {isUser ? <User size={14} /> : <Bot size={14} />}
       </div>
       <div className="flex-1 min-w-0 text-sm leading-relaxed">
+        {isExcluded && (
+          <Badge variant="outline" className="mb-1 text-[10px] px-1.5 py-0 text-muted-foreground border-muted">
+            fora do contexto
+          </Badge>
+        )}
         {isUser ? (
           <p className="text-foreground">{message.content}</p>
         ) : (
@@ -99,6 +113,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
         )}
       </div>
+
+      {/* Action buttons on hover */}
+      {!isStreaming && (onDelete || onToggleExclude) && (
+        <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1">
+          {onToggleExclude && (
+            <button
+              onClick={() => onToggleExclude(message.id, !isExcluded)}
+              className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              title={isExcluded ? "Incluir no contexto" : "Excluir do contexto"}
+            >
+              {isExcluded ? <Eye size={14} /> : <EyeOff size={14} />}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(message.id)}
+              className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+              title="Excluir mensagem"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

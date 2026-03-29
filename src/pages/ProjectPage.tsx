@@ -104,6 +104,24 @@ const ProjectPage = () => {
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
   });
 
+  const handleDeleteMessage = async (messageId: string) => {
+    const { error } = await supabase.from("chat_messages").delete().eq("id", messageId);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao excluir mensagem.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["messages", id] });
+  };
+
+  const handleToggleExclude = async (messageId: string, excluded: boolean) => {
+    const { error } = await supabase.from("chat_messages").update({ excluded }).eq("id", messageId);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao atualizar mensagem.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["messages", id] });
+  };
+
   const handleSend = async (content: string) => {
     // Save user message
     await saveMessage.mutateAsync({ role: "user", content });
@@ -116,7 +134,7 @@ const ProjectPage = () => {
       setIsLoading(true);
       try {
         const historyMessages = [
-          ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+          ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
           { role: "user" as const, content },
         ];
 
@@ -176,7 +194,7 @@ const ProjectPage = () => {
 
     try {
       const historyMessages = [
-        ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         { role: "user" as const, content },
       ];
 
@@ -247,7 +265,7 @@ const ProjectPage = () => {
 
     setIsGenerating(true);
     try {
-      const historyMessages = messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      const historyMessages = messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
@@ -353,7 +371,9 @@ const ProjectPage = () => {
                 {messages.map((msg) => (
                   <ChatMessage
                     key={msg.id}
-                    message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at) }}
+                    message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at), excluded: !!(msg as any).excluded }}
+                    onDelete={handleDeleteMessage}
+                    onToggleExclude={handleToggleExclude}
                   />
                 ))}
                 {streamingContent && (
