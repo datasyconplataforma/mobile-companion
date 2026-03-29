@@ -192,6 +192,11 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
                   Veja modelos em openrouter.ai/models
                 </p>
               )}
+              {provider === "ollama" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Local: llama3.2, mistral, qwen2.5 · Cloud: gpt-oss:120b-cloud, deepseek-v3.1:671b-cloud, qwen3-coder:480b-cloud (requer <code className="text-[10px] bg-secondary px-1 rounded">ollama signin</code>)
+                </p>
+              )}
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
