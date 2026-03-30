@@ -72,6 +72,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
+  const [reviewerMode, setReviewerMode] = useState("lovable");
 
   useEffect(() => {
     if (open && projectId) loadSettings();
