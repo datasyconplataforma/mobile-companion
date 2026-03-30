@@ -259,30 +259,30 @@ const PromptList = ({ projectId }: PromptListProps) => {
                   const bilingual = splitBilingual(prompt.prompt_text);
                   if (bilingual) {
                     return (
-                      <div className="grid grid-cols-2 gap-3 mt-2">
-                        <div className="rounded-lg bg-secondary/50 p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇧🇷 PT</span>
+                      <div className="grid grid-cols-2 gap-2 mt-1.5">
+                        <div className="rounded-md bg-secondary/40 px-2.5 py-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">🇧🇷 PT</span>
                             <button
                               onClick={() => handleCopy(`${prompt.id}-pt`, bilingual.pt)}
-                              className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                              className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                             >
-                              {copiedId === `${prompt.id}-pt` ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                              {copiedId === `${prompt.id}-pt` ? <Check size={11} className="text-primary" /> : <Copy size={11} />}
                             </button>
                           </div>
-                          <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">{bilingual.pt}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono leading-snug whitespace-pre-wrap">{bilingual.pt}</p>
                         </div>
-                        <div className="rounded-lg bg-secondary/50 p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇺🇸 EN</span>
+                        <div className="rounded-md bg-secondary/40 px-2.5 py-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">🇺🇸 EN</span>
                             <button
                               onClick={() => handleCopy(`${prompt.id}-en`, bilingual.en)}
-                              className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                              className="p-0.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                             >
-                              {copiedId === `${prompt.id}-en` ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                              {copiedId === `${prompt.id}-en` ? <Check size={11} className="text-primary" /> : <Copy size={11} />}
                             </button>
                           </div>
-                          <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">{bilingual.en}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono leading-snug whitespace-pre-wrap">{bilingual.en}</p>
                         </div>
                       </div>
                     );
