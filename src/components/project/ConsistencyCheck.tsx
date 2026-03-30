@@ -2,11 +2,12 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, X, ShieldCheck, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { AlertTriangle, Loader2, X, ShieldCheck, ChevronDown, ChevronRight, Clock, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface ConsistencyCheckProps {
   projectId: string;
+  onSendToChat?: (message: string) => void;
 }
 
 interface DebateData {
@@ -22,13 +23,20 @@ interface DebateData {
 const providerLabel = (p: string) =>
   ({ lovable: "Lovable AI", gemini: "Google Gemini", openrouter: "OpenRouter", claude: "Claude", ollama: "Ollama" }[p] || p);
 
-const ConsistencyCheck = ({ projectId }: ConsistencyCheckProps) => {
+interface FixPrompt {
+  title: string;
+  prompt: string;
+  severity: string;
+}
+
+const ConsistencyCheck = ({ projectId, onSendToChat }: ConsistencyCheckProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [debate, setDebate] = useState<DebateData | null>(null);
+  const [fixPrompts, setFixPrompts] = useState<FixPrompt[]>([]);
   const [showPanel, setShowPanel] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ final: true });
 
@@ -96,6 +104,7 @@ const ConsistencyCheck = ({ projectId }: ConsistencyCheckProps) => {
     setIsAnalyzing(true);
     setResult(null);
     setDebate(null);
+    setFixPrompts([]);
     setCurrentStep(1);
     setShowPanel(true);
     setExpandedSections({ final: true });
@@ -151,6 +160,7 @@ ${chatSummary}
       const data = await resp.json();
       setResult(data.result);
       setDebate(data.debate);
+      setFixPrompts(data.fixPrompts || []);
       setCurrentStep(3);
 
       // Invalidate debates list
@@ -306,10 +316,48 @@ ${chatSummary}
                     </div>
                   )}
 
-                  {/* Fallback: no debate data (error case) */}
-                  {!debate && result && (
-                    <div className="prose prose-sm prose-invert max-w-none">
-                      <ReactMarkdown>{result}</ReactMarkdown>
+                  {/* Fix Prompts */}
+                  {fixPrompts.length > 0 && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+                      <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        🛠️ Prompts de Correção — clique para enviar no chat
+                      </h3>
+                      <div className="space-y-2">
+                        {fixPrompts.map((fp, i) => {
+                          const severityColors: Record<string, string> = {
+                            high: "border-destructive/40 bg-destructive/5",
+                            medium: "border-yellow-500/40 bg-yellow-500/5",
+                            low: "border-primary/30 bg-primary/5",
+                          };
+                          const severityLabels: Record<string, string> = {
+                            high: "🔴",
+                            medium: "🟡",
+                            low: "🟢",
+                          };
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                if (onSendToChat) {
+                                  onSendToChat(fp.prompt);
+                                  setShowPanel(false);
+                                }
+                              }}
+                              className={`w-full text-left p-3 rounded-lg border ${severityColors[fp.severity] || severityColors.medium} hover:shadow-md transition-all group`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                                    {severityLabels[fp.severity] || "🟡"} {fp.title}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{fp.prompt}</p>
+                                </div>
+                                <Send size={12} className="shrink-0 mt-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </>

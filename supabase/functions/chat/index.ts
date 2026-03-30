@@ -849,6 +849,46 @@ Responda com uma análise objetiva e direta. Liste especificamente o que foi bem
 
       const auditDuration = Date.now() - auditStartTime;
 
+      // STEP 4: Generate actionable fix prompts based on the audit
+      let fixPrompts: { title: string; prompt: string; severity: string }[] = [];
+      try {
+        const fixBody = reviewerConfig.transformBody({
+          messages: [
+            { role: "system", content: "Você gera prompts de correção concisos para um chat de IA que planeja projetos de software." },
+            { role: "user", content: `Baseado no relatório de auditoria abaixo, gere de 3 a 6 prompts de CORREÇÃO que o usuário pode enviar no chat para pedir à IA que ajuste o projeto.
+
+Cada prompt deve:
+- Ser uma instrução clara e direta para a IA do chat
+- Focar em UM problema específico encontrado na auditoria
+- Usar linguagem imperativa (ex: "Atualize o PRD para...", "Adicione tarefas para...")
+- Ter no máximo 2-3 frases
+
+RELATÓRIO DE AUDITORIA:
+${finalAudit.slice(0, 6000)}
+
+Responda EXCLUSIVAMENTE com um JSON válido neste formato (sem markdown, sem texto antes/depois):
+[
+  {"title": "título curto (max 6 palavras)", "prompt": "instrução completa para o chat", "severity": "high|medium|low"}
+]` },
+          ],
+        });
+        const fixResp = await fetch(reviewerConfig.url, {
+          method: "POST",
+          headers: reviewerConfig.headers,
+          body: JSON.stringify(fixBody),
+        });
+        if (fixResp.ok) {
+          const fixResult = await fixResp.json();
+          const fixContent = fixResult.choices?.[0]?.message?.content || "";
+          const jsonMatch = fixContent.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            fixPrompts = JSON.parse(jsonMatch[0]);
+          }
+        }
+      } catch (e) {
+        console.error("Fix prompts generation error:", e);
+      }
+
       // Save audit debate record
       try {
         await supabase.from("project_debates").insert({
@@ -872,6 +912,7 @@ Responda com uma análise objetiva e direta. Liste especificamente o que foi bem
 
       return new Response(JSON.stringify({
         result: finalAudit,
+        fixPrompts,
         debate: {
           happened: !!auditReviewFeedback,
           initialAudit: audit1Content,
