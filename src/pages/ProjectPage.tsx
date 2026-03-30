@@ -436,14 +436,21 @@ const ProjectPage = () => {
               </div>
             ) : (
               <div className="max-w-2xl mx-auto">
-                {messages.map((msg) => (
-                  <ChatMessage
-                    key={msg.id}
-                    message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at), excluded: !!(msg as any).excluded }}
-                    onDelete={handleDeleteMessage}
-                    onToggleExclude={handleToggleExclude}
-                  />
-                ))}
+                {messages.map((msg, idx) => {
+                  const isLastAssistant = msg.role === "assistant" && 
+                    !messages.slice(idx + 1).some(m => m.role === "assistant");
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at), excluded: !!(msg as any).excluded }}
+                      onDelete={handleDeleteMessage}
+                      onToggleExclude={handleToggleExclude}
+                      onSendOption={handleSend}
+                      isLastAssistant={isLastAssistant}
+                      isLoading={isLoading}
+                    />
+                  );
+                })}
                 {streamingContent && (
                   <ChatMessage
                     message={{ id: "streaming", role: "assistant", content: streamingContent, timestamp: new Date() }}
