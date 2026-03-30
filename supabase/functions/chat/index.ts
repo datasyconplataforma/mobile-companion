@@ -662,7 +662,23 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
         }
       }
 
-      return new Response(JSON.stringify({ saved, content: contentText }), {
+      const debate = {
+        happened: !!reviewFeedback,
+        reviewerMode: effectiveSettings?.reviewer_mode || "lovable",
+        reviewerProvider: (effectiveSettings?.reviewer_mode === "same")
+          ? (effectiveSettings?.provider || "lovable")
+          : "lovable",
+        mainProvider: effectiveSettings?.provider || "lovable",
+        mainModel: effectiveSettings?.model || null,
+        feedbackPreview: reviewFeedback ? reviewFeedback.slice(0, 500) : null,
+        steps: [
+          { step: 1, label: "IA Principal gerou versão inicial", done: true },
+          { step: 2, label: "IA Revisora analisou e criticou", done: !!reviewFeedback },
+          { step: 3, label: "IA Principal refinou com base no feedback", done: !!reviewFeedback && supportsTools },
+        ],
+      };
+
+      return new Response(JSON.stringify({ saved, content: contentText, debate }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
