@@ -18,11 +18,12 @@ const SUGGESTED_SKILLS = [
 
 type SkillScope = "project" | "global";
 
-const SkillList = ({ projectId }: SkillListProps) => {
+const SkillList = ({ projectId, githubRepoUrl }: SkillListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [input, setInput] = useState("");
   const [scope, setScope] = useState<SkillScope>("project");
+  const [importingGithub, setImportingGithub] = useState(false);
 
   const { data: projectSkills = [], isLoading: loadingProject } = useQuery({
     queryKey: ["skills", projectId],
