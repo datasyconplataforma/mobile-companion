@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { X, Plus, Loader2, Wrench } from "lucide-react";
+import { X, Plus, Loader2, Wrench, Globe, FolderOpen } from "lucide-react";
 
 interface SkillListProps {
   projectId: string;
@@ -15,12 +15,15 @@ const SUGGESTED_SKILLS = [
   "Prisma", "Drizzle", "Zod", "React Query", "Zustand",
 ];
 
+type SkillScope = "project" | "global";
+
 const SkillList = ({ projectId }: SkillListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [input, setInput] = useState("");
+  const [scope, setScope] = useState<SkillScope>("project");
 
-  const { data: skills = [], isLoading } = useQuery({
+  const { data: projectSkills = [], isLoading: loadingProject } = useQuery({
     queryKey: ["skills", projectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,7 +36,21 @@ const SkillList = ({ projectId }: SkillListProps) => {
     },
   });
 
-  const addSkill = useMutation({
+  const { data: globalSkills = [], isLoading: loadingGlobal } = useQuery({
+    queryKey: ["global_skills", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("global_skills" as any)
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const addProjectSkill = useMutation({
     mutationFn: async (name: string) => {
       const { error } = await supabase.from("project_skills" as any).insert({
         project_id: projectId,
@@ -48,7 +65,21 @@ const SkillList = ({ projectId }: SkillListProps) => {
     },
   });
 
-  const removeSkill = useMutation({
+  const addGlobalSkill = useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await supabase.from("global_skills" as any).insert({
+        user_id: user!.id,
+        name: name.trim(),
+      } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["global_skills", user?.id] });
+      setInput("");
+    },
+  });
+
+  const removeProjectSkill = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("project_skills" as any).delete().eq("id", id);
       if (error) throw error;
@@ -56,10 +87,27 @@ const SkillList = ({ projectId }: SkillListProps) => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["skills", projectId] }),
   });
 
+  const removeGlobalSkill = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("global_skills" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["global_skills", user?.id] }),
+  });
+
+  const allSkillNames = new Set([
+    ...projectSkills.map((s: any) => s.name.toLowerCase()),
+    ...globalSkills.map((s: any) => s.name.toLowerCase()),
+  ]);
+
   const handleAdd = (name: string) => {
     if (!name.trim()) return;
-    if (skills.some((s: any) => s.name.toLowerCase() === name.trim().toLowerCase())) return;
-    addSkill.mutate(name);
+    if (allSkillNames.has(name.trim().toLowerCase())) return;
+    if (scope === "project") {
+      addProjectSkill.mutate(name);
+    } else {
+      addGlobalSkill.mutate(name);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -69,10 +117,9 @@ const SkillList = ({ projectId }: SkillListProps) => {
     }
   };
 
-  const existingNames = new Set(skills.map((s: any) => s.name.toLowerCase()));
-  const suggestions = SUGGESTED_SKILLS.filter((s) => !existingNames.has(s.toLowerCase()));
+  const suggestions = SUGGESTED_SKILLS.filter((s) => !allSkillNames.has(s.toLowerCase()));
 
-  if (isLoading) {
+  if (loadingProject || loadingGlobal) {
     return (
       <div className="flex items-center justify-center py-6">
         <Loader2 className="animate-spin text-muted-foreground" size={20} />
@@ -87,31 +134,89 @@ const SkillList = ({ projectId }: SkillListProps) => {
         Skills / Tecnologias
       </div>
 
-      {/* Current skills */}
-      <div className="flex flex-wrap gap-1.5">
-        {skills.map((skill: any) => (
-          <span
-            key={skill.id}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-medium"
-          >
-            {skill.name}
-            <button
-              onClick={() => removeSkill.mutate(skill.id)}
-              className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
-            >
-              <X size={11} />
-            </button>
+      {/* Global skills */}
+      {globalSkills.length > 0 && (
+        <div>
+          <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5">
+            <Globe size={11} />
+            Globais (todos os projetos)
           </span>
-        ))}
-      </div>
+          <div className="flex flex-wrap gap-1.5">
+            {globalSkills.map((skill: any) => (
+              <span
+                key={skill.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs font-medium"
+              >
+                {skill.name}
+                <button
+                  onClick={() => removeGlobalSkill.mutate(skill.id)}
+                  className="p-0.5 rounded-full hover:bg-accent/80 transition-colors"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* Input */}
+      {/* Project skills */}
+      {projectSkills.length > 0 && (
+        <div>
+          <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5">
+            <FolderOpen size={11} />
+            Projeto
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {projectSkills.map((skill: any) => (
+              <span
+                key={skill.id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-medium"
+              >
+                {skill.name}
+                <button
+                  onClick={() => removeProjectSkill.mutate(skill.id)}
+                  className="p-0.5 rounded-full hover:bg-primary/20 transition-colors"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input with scope toggle */}
       <div className="flex gap-2">
+        <div className="flex rounded-lg bg-secondary overflow-hidden shrink-0">
+          <button
+            onClick={() => setScope("project")}
+            className={`px-2 py-1.5 text-xs font-medium transition-colors ${
+              scope === "project"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Adicionar ao projeto"
+          >
+            <FolderOpen size={13} />
+          </button>
+          <button
+            onClick={() => setScope("global")}
+            className={`px-2 py-1.5 text-xs font-medium transition-colors ${
+              scope === "global"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Adicionar como global"
+          >
+            <Globe size={13} />
+          </button>
+        </div>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Adicionar skill..."
+          placeholder={scope === "global" ? "Adicionar skill global..." : "Adicionar skill do projeto..."}
           className="flex-1 px-3 py-1.5 rounded-lg bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring"
         />
         <button
