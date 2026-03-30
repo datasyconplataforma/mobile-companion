@@ -303,6 +303,18 @@ const SkillList = ({ projectId, githubRepoUrl }: SkillListProps) => {
         </button>
       </div>
 
+      {/* GitHub import */}
+      {githubRepoUrl && (
+        <button
+          onClick={handleImportFromGithub}
+          disabled={importingGithub}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground text-xs font-medium transition-colors hover:bg-secondary/80 disabled:opacity-50"
+        >
+          {importingGithub ? <Loader2 size={13} className="animate-spin" /> : <Github size={13} />}
+          Importar skills do GitHub
+        </button>
+      )}
+
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div>
