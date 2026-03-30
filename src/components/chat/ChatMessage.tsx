@@ -12,6 +12,9 @@ interface ChatMessageProps {
   message: Message;
   onDelete?: (id: string) => void;
   onToggleExclude?: (id: string, excluded: boolean) => void;
+  onSendOption?: (text: string) => void;
+  isLastAssistant?: boolean;
+  isLoading?: boolean;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude }) => {
