@@ -628,6 +628,7 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
                 project_id: projectId, user_id: userId,
                 title: p.title, prompt_text: p.prompt_text,
                 category: p.category || "general", sort_order: i,
+                prompt_type: p.prompt_type || "implementation",
               }));
               await supabase.from("project_prompts").insert(promptRows);
               saved.prompts = true;
