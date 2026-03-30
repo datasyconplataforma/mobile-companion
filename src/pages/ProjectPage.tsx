@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords, RotateCcw } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords, RotateCcw, Plug } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
@@ -20,9 +20,10 @@ import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
 import DebateView from "@/components/project/DebateView";
+import MCPConfig from "@/components/project/MCPConfig";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate" | "mcp";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -484,6 +485,7 @@ const ProjectPage = () => {
     { key: "docs", icon: Paperclip, label: "Docs" },
     { key: "skills", icon: Wrench, label: "Skills" },
     { key: "debate", icon: Swords, label: "Debate" },
+    { key: "mcp", icon: Plug, label: "MCP" },
   ];
 
   // Parse attachments from stored message content for display
@@ -618,6 +620,7 @@ const ProjectPage = () => {
       {activeTab === "docs" && <DocumentList projectId={id!} />}
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
       {activeTab === "debate" && <DebateView projectId={id!} />}
+      {activeTab === "mcp" && <MCPConfig projectId={id!} />}
     </div>
   );
 };
