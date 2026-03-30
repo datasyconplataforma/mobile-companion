@@ -65,11 +65,15 @@ Após coletar informações suficientes, avise que o usuário pode pedir:
 
 IMPORTANTE: Você tem acesso ao contexto completo do projeto abaixo. Use essas informações para dar respostas mais precisas e evitar perguntas repetidas.`;
 
-function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[]; skills?: string[]; businessRules?: string }): string {
+function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[]; skills?: string[]; globalSkills?: string[]; businessRules?: string }): string {
   let prompt = BASE_SYSTEM_PROMPT;
 
+  if (context.globalSkills && context.globalSkills.length > 0) {
+    prompt += `\n\n---\n## SKILLS GLOBAIS DO USUÁRIO (aplicam-se a TODOS os projetos):\n${context.globalSkills.join(", ")}\nEssas são as tecnologias e competências que o usuário domina e prefere usar em todos os projetos. Priorize essas tecnologias nas sugestões.`;
+  }
+
   if (context.skills && context.skills.length > 0) {
-    prompt += `\n\n---\n## SKILLS / TECNOLOGIAS DO PROJETO:\n${context.skills.join(", ")}`;
+    prompt += `\n\n---\n## SKILLS / TECNOLOGIAS ESPECÍFICAS DO PROJETO:\n${context.skills.join(", ")}`;
   }
 
   if (context.businessRules && context.businessRules.trim()) {
