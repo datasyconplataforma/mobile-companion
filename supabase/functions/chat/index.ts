@@ -424,11 +424,13 @@ Para os prompts: cada prompt deve conter o texto em português seguido de "---" 
         // JSON fallback for providers without tool calling support
         const jsonPrompt = systemPrompt + `\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable.
 
+REGRA DE IDIOMA: O PRD e os prompts devem ser BILÍNGUES (português primeiro, depois inglês separado por ---).
+
 Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes/depois) neste formato exato:
 {
-  "prd_content": "conteúdo completo do PRD em markdown",
+  "prd_content": "conteúdo completo do PRD em markdown (bilíngue: PT + EN separados por ---)",
   "tasks": [{"title": "tarefa 1", "description": "descrição"}],
-  "prompts": [{"title": "titulo", "prompt_text": "texto do prompt", "category": "setup|feature|ui|backend|general"}],
+  "prompts": [{"title": "titulo", "prompt_text": "texto do prompt em PT\\n---\\ntexto em EN", "category": "setup|feature|ui|backend|general"}],
   "message": "mensagem opcional para o usuário"
 }`;
         baseBody = {
