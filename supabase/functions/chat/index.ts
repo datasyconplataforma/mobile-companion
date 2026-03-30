@@ -98,7 +98,16 @@ function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any
     const docList = context.documents
       .map((d: any, i: number) => `### Documento ${i + 1}: ${d.name}\n${d.content}`)
       .join("\n\n");
-    prompt += `\n\n---\n## DOCUMENTOS DE REFERÊNCIA ANEXADOS:\nOs documentos abaixo foram fornecidos pelo usuário como referência. Use essas informações para enriquecer o PRD, tarefas e prompts:\n\n${docList}`;
+    prompt += `\n\n---\n## DOCUMENTOS DE REFERÊNCIA ANEXADOS (RAG):
+IMPORTANTE: Os documentos abaixo são a base principal de conhecimento do projeto. Você DEVE considerar ativamente essas informações ao:
+- Responder perguntas sobre o projeto
+- Gerar o PRD (incorpore requisitos, regras e specs dos documentos)
+- Criar tarefas (baseie-se nos requisitos documentados)
+- Gerar prompts (referencie funcionalidades descritas nos docs)
+
+Se o usuário enviar um documento no chat (marcado com 📎), dê prioridade a esse conteúdo na resposta.
+
+${docList}`;
   }
 
   return prompt;
