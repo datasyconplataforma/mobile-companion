@@ -233,18 +233,21 @@ const DashboardPage = () => {
                         {statusLabels[project.status] || "Planejando"}
                       </span>
                       {!(project as any)._shared && (
-                        <button
-                        onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
-                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
-                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
+                            className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
+                            className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => navigate(`/project/${project.id}`)} className="w-full text-left">
