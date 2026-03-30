@@ -316,10 +316,48 @@ ${chatSummary}
                     </div>
                   )}
 
-                  {/* Fallback: no debate data (error case) */}
-                  {!debate && result && (
-                    <div className="prose prose-sm prose-invert max-w-none">
-                      <ReactMarkdown>{result}</ReactMarkdown>
+                  {/* Fix Prompts */}
+                  {fixPrompts.length > 0 && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2">
+                      <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                        🛠️ Prompts de Correção — clique para enviar no chat
+                      </h3>
+                      <div className="space-y-2">
+                        {fixPrompts.map((fp, i) => {
+                          const severityColors: Record<string, string> = {
+                            high: "border-destructive/40 bg-destructive/5",
+                            medium: "border-yellow-500/40 bg-yellow-500/5",
+                            low: "border-primary/30 bg-primary/5",
+                          };
+                          const severityLabels: Record<string, string> = {
+                            high: "🔴",
+                            medium: "🟡",
+                            low: "🟢",
+                          };
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                if (onSendToChat) {
+                                  onSendToChat(fp.prompt);
+                                  setShowPanel(false);
+                                }
+                              }}
+                              className={`w-full text-left p-3 rounded-lg border ${severityColors[fp.severity] || severityColors.medium} hover:shadow-md transition-all group`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                                    {severityLabels[fp.severity] || "🟡"} {fp.title}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{fp.prompt}</p>
+                                </div>
+                                <Send size={12} className="shrink-0 mt-0.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </>
