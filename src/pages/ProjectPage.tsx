@@ -528,6 +528,7 @@ const ProjectPage = () => {
       {activeTab === "prompts" && <PromptList projectId={id!} />}
       {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
+      {activeTab === "skills" && <ProjectSkills projectId={id!} />}
     </div>
   );
 };
