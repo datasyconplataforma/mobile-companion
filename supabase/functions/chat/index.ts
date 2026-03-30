@@ -65,15 +65,23 @@ Após coletar informações suficientes, avise que o usuário pode pedir:
 
 IMPORTANTE: Você tem acesso ao contexto completo do projeto abaixo. Use essas informações para dar respostas mais precisas e evitar perguntas repetidas.`;
 
-function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[]; skills?: string[]; globalSkills?: string[]; businessRules?: string }): string {
+function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any[]; documents?: any[]; skills?: any[]; globalSkills?: any[]; businessRules?: string }): string {
   let prompt = BASE_SYSTEM_PROMPT;
 
   if (context.globalSkills && context.globalSkills.length > 0) {
-    prompt += `\n\n---\n## SKILLS GLOBAIS DO USUÁRIO (aplicam-se a TODOS os projetos):\n${context.globalSkills.join(", ")}\nEssas são as tecnologias e competências que o usuário domina e prefere usar em todos os projetos. Priorize essas tecnologias nas sugestões.`;
+    const skillList = context.globalSkills.map((s: any) => {
+      if (typeof s === "string") return `- ${s}`;
+      return s.context ? `### ${s.name}\n${s.context}` : `- ${s.name}`;
+    }).join("\n\n");
+    prompt += `\n\n---\n## SKILLS GLOBAIS DO USUÁRIO (aplicam-se a TODOS os projetos):\n${skillList}\nEssas são as tecnologias e competências que o usuário domina e prefere usar. Priorize essas tecnologias nas sugestões e SIGA as diretrizes de contexto de cada skill.`;
   }
 
   if (context.skills && context.skills.length > 0) {
-    prompt += `\n\n---\n## SKILLS / TECNOLOGIAS ESPECÍFICAS DO PROJETO:\n${context.skills.join(", ")}`;
+    const skillList = context.skills.map((s: any) => {
+      if (typeof s === "string") return `- ${s}`;
+      return s.context ? `### ${s.name}\n${s.context}` : `- ${s.name}`;
+    }).join("\n\n");
+    prompt += `\n\n---\n## SKILLS / TECNOLOGIAS ESPECÍFICAS DO PROJETO:\n${skillList}\nSIGA as diretrizes de contexto de cada skill ao gerar PRD, tarefas e prompts.`;
   }
 
   if (context.businessRules && context.businessRules.trim()) {

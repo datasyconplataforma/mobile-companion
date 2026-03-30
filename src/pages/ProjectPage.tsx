@@ -152,8 +152,8 @@ const ProjectPage = () => {
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
     documents: documents.filter((d) => d.extracted_text).map((d) => ({ name: d.file_name, content: d.extracted_text })),
-    skills: skills.map((s: any) => s.name),
-    globalSkills: globalSkills.map((s: any) => s.name),
+    skills: skills.map((s: any) => ({ name: s.name, context: s.context_md || "" })),
+    globalSkills: globalSkills.map((s: any) => ({ name: s.name, context: s.context_md || "" })),
     businessRules: businessRules?.content || "",
   });
 
