@@ -503,7 +503,7 @@ const ProjectPage = () => {
         </button>
         <span className="font-semibold text-sm text-foreground truncate flex-1">{project?.name || "..."}</span>
         <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
-        <ConsistencyCheck projectId={id!} />
+        <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
         <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
         <LLMSettings projectId={id!} />
         <div className="relative flex items-center gap-1.5">
