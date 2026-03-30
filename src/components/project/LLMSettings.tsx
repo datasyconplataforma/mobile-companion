@@ -72,6 +72,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [model, setModel] = useState("");
+  const [reviewerMode, setReviewerMode] = useState("lovable");
 
   useEffect(() => {
     if (open && projectId) loadSettings();
@@ -89,11 +90,13 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
       setApiKey((data as any).api_key || "");
       setBaseUrl((data as any).base_url || "");
       setModel((data as any).model || "");
+      setReviewerMode((data as any).reviewer_mode || "lovable");
     } else {
       setProvider("lovable");
       setApiKey("");
       setBaseUrl("");
       setModel("");
+      setReviewerMode("lovable");
     }
     setLoading(false);
   };
@@ -121,6 +124,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
         api_key: apiKey || null,
         base_url: baseUrl || null,
         model: model || null,
+        reviewer_mode: reviewerMode,
       };
 
       const { data: existing } = await supabase
@@ -308,6 +312,30 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
                   )}
                 </>
               )}
+            </div>
+
+            {/* Reviewer mode */}
+            <div>
+              <Label>IA Revisora (debate)</Label>
+              <Select value={reviewerMode} onValueChange={setReviewerMode}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lovable">
+                    <div className="flex items-center gap-2">
+                      Lovable AI (independente)
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">padrão</Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="same">Mesma IA principal</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {reviewerMode === "same"
+                  ? "A mesma IA gera e revisa — mais rápido, mas sem perspectiva externa."
+                  : "Uma IA independente revisa o conteúdo gerado para maior qualidade."}
+              </p>
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">

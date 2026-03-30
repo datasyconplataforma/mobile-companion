@@ -1,0 +1,1 @@
+ALTER TABLE public.project_llm_settings ADD COLUMN reviewer_mode text NOT NULL DEFAULT 'lovable';

@@ -494,8 +494,11 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
         ai1Content = rawResult1.choices?.[0]?.message?.content || "";
       }
 
-      // === STEP 2: AI2 critiques (uses Lovable AI as reviewer for independence) ===
-      const reviewerConfig = getProviderConfig(null, LOVABLE_API_KEY); // Always use Lovable AI as reviewer
+      // === STEP 2: AI2 critiques ===
+      // Use same provider as main if reviewer_mode is "same", otherwise Lovable AI
+      const reviewerConfig = (effectiveSettings?.reviewer_mode === "same")
+        ? providerConfig
+        : getProviderConfig(null, LOVABLE_API_KEY);
       const reviewPrompt = `Você é um REVISOR TÉCNICO SÊNIOR. Analise o PRD, tarefas e prompts gerados abaixo e forneça críticas construtivas.
 
 Avalie:
