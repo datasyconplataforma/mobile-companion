@@ -413,16 +413,20 @@ IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponí
 
 REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.
 
-REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Escreva PRIMEIRO a versão em português e DEPOIS a versão em inglês, separadas por uma linha horizontal (---). Exemplo para o PRD:
+REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Escreva PRIMEIRO a versão completa em português e DEPOIS a versão em inglês, separadas por uma linha horizontal (---).
+
+REGRA CRÍTICA DE TRADUÇÃO: A versão em inglês DEVE ser uma tradução FIEL e COMPLETA da versão em português. Não é necessário ser literal palavra por palavra, mas TODAS as seções, requisitos, funcionalidades, regras e detalhes técnicos presentes no texto em português DEVEM estar presentes no texto em inglês, na mesma ordem e com a mesma lógica. O objetivo é que um desenvolvedor lendo apenas a versão em inglês consiga construir EXATAMENTE o mesmo sistema que lendo a versão em português. NÃO resuma, NÃO omita seções, NÃO invente conteúdo diferente.
+
+Exemplo para o PRD:
 # PRD — Nome do Projeto
-(conteúdo em português)
+(conteúdo COMPLETO em português com todas as seções)
 
 ---
 
 # PRD — Project Name (English Version)
-(same content in English)
+(tradução FIEL e COMPLETA do mesmo conteúdo acima em inglês, mesmas seções, mesma ordem)
 
-Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.
+Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a tradução fiel em inglês do mesmo prompt. O título do prompt deve ser em português.
 
 REGRA PARA PROMPTS — GUIA DE IMPLEMENTAÇÃO SEQUENCIAL:
 Os prompts DEVEM ser gerados como um ROTEIRO DE IMPLEMENTAÇÃO SEQUENCIAL numerado. Cada prompt é um PASSO que o usuário enviará na Lovable, NA ORDEM EXATA.
