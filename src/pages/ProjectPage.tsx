@@ -34,6 +34,8 @@ const ProjectPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
 
   const { data: project } = useQuery({
