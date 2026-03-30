@@ -399,7 +399,18 @@ serve(async (req) => {
 
 IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponível (incluindo o PRD existente se houver) para gerar os documentos. SEMPRE chame as 3 ferramentas.
 
-REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.`;
+REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.
+
+REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Escreva PRIMEIRO a versão em português e DEPOIS a versão em inglês, separadas por uma linha horizontal (---). Exemplo para o PRD:
+# PRD — Nome do Projeto
+(conteúdo em português)
+
+---
+
+# PRD — Project Name (English Version)
+(same content in English)
+
+Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.`;
         baseBody = {
           messages: [
             { role: "system", content: systemPrompt + generateInstruction },
