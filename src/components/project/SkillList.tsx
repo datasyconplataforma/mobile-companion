@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { X, Plus, Loader2, Wrench, Globe, FolderOpen } from "lucide-react";
+import { X, Plus, Loader2, Wrench, Globe, FolderOpen, Github } from "lucide-react";
 
 interface SkillListProps {
   projectId: string;
+  githubRepoUrl?: string | null;
 }
 
 const SUGGESTED_SKILLS = [
@@ -17,11 +18,12 @@ const SUGGESTED_SKILLS = [
 
 type SkillScope = "project" | "global";
 
-const SkillList = ({ projectId }: SkillListProps) => {
+const SkillList = ({ projectId, githubRepoUrl }: SkillListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [input, setInput] = useState("");
   const [scope, setScope] = useState<SkillScope>("project");
+  const [importingGithub, setImportingGithub] = useState(false);
 
   const { data: projectSkills = [], isLoading: loadingProject } = useQuery({
     queryKey: ["skills", projectId],
@@ -114,6 +116,79 @@ const SkillList = ({ projectId }: SkillListProps) => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleAdd(input);
+    }
+  };
+
+  const handleImportFromGithub = async () => {
+    if (!githubRepoUrl || !user) return;
+    setImportingGithub(true);
+    try {
+      const cleaned = githubRepoUrl.replace(/\.git$/, "").replace(/\/$/, "");
+      const match = cleaned.match(/github\.com\/([^/]+)\/([^/]+)/);
+      if (!match) return;
+      const [, owner, repo] = match;
+
+      // Get token if saved
+      const { data: proj } = await supabase.from("projects").select("github_token").eq("id", projectId).single();
+      const token = (proj as any)?.github_token;
+
+      const headers: Record<string, string> = { "User-Agent": "CodeBuddy-App" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/languages`, { headers });
+      if (!resp.ok) throw new Error("Não foi possível acessar o repositório");
+      const languages: Record<string, number> = await resp.json();
+
+      // Also try to detect from package.json
+      let packageDeps: string[] = [];
+      try {
+        const pkgResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/package.json`, { headers });
+        if (pkgResp.ok) {
+          const pkgData = await pkgResp.json();
+          const content = atob(pkgData.content);
+          const pkg = JSON.parse(content);
+          const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+          const knownFrameworks: Record<string, string> = {
+            "react": "React", "next": "Next.js", "vue": "Vue.js", "svelte": "Svelte",
+            "@angular/core": "Angular", "express": "Express", "fastify": "Fastify",
+            "tailwindcss": "Tailwind CSS", "prisma": "Prisma", "@supabase/supabase-js": "Supabase",
+            "firebase": "Firebase", "stripe": "Stripe", "zod": "Zod",
+            "@tanstack/react-query": "React Query", "zustand": "Zustand", "drizzle-orm": "Drizzle",
+            "mongoose": "MongoDB", "redis": "Redis", "graphql": "GraphQL",
+            "socket.io": "Socket.io", "jest": "Jest", "vitest": "Vitest",
+            "cypress": "Cypress", "docker-compose": "Docker", "typescript": "TypeScript",
+          };
+          for (const dep of Object.keys(allDeps)) {
+            if (knownFrameworks[dep]) packageDeps.push(knownFrameworks[dep]);
+          }
+        }
+      } catch {}
+
+      const detectedSkills = [...Object.keys(languages), ...packageDeps];
+      let added = 0;
+      for (const skill of detectedSkills) {
+        if (allSkillNames.has(skill.toLowerCase())) continue;
+        const { error } = await supabase.from("project_skills" as any).insert({
+          project_id: projectId, user_id: user.id, name: skill,
+        } as any);
+        if (!error) added++;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["skills", projectId] });
+      if (added > 0) {
+        // toast-like feedback via the input
+        setInput(`✅ ${added} skills importadas do GitHub!`);
+        setTimeout(() => setInput(""), 2000);
+      } else {
+        setInput("Nenhuma skill nova encontrada.");
+        setTimeout(() => setInput(""), 2000);
+      }
+    } catch (err: any) {
+      console.error("GitHub import error:", err);
+      setInput("❌ Erro ao importar do GitHub");
+      setTimeout(() => setInput(""), 2000);
+    } finally {
+      setImportingGithub(false);
     }
   };
 
@@ -227,6 +302,18 @@ const SkillList = ({ projectId }: SkillListProps) => {
           <Plus size={14} />
         </button>
       </div>
+
+      {/* GitHub import */}
+      {githubRepoUrl && (
+        <button
+          onClick={handleImportFromGithub}
+          disabled={importingGithub}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground text-xs font-medium transition-colors hover:bg-secondary/80 disabled:opacity-50"
+        >
+          {importingGithub ? <Loader2 size={13} className="animate-spin" /> : <Github size={13} />}
+          Importar skills do GitHub
+        </button>
+      )}
 
       {/* Suggestions */}
       {suggestions.length > 0 && (
