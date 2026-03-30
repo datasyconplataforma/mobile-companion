@@ -171,7 +171,7 @@ const tools = [
     type: "function",
     function: {
       name: "save_prompts",
-      description: "Salva prompts prontos para usar na Lovable. Chamar quando o usuário pedir para gerar prompts.",
+      description: "Salva prompts como guia de implementação sequencial para a Lovable. Cada prompt é um passo numerado.",
       parameters: {
         type: "object",
         properties: {
@@ -180,11 +180,12 @@ const tools = [
             items: {
               type: "object",
               properties: {
-                title: { type: "string" },
-                prompt_text: { type: "string" },
+                title: { type: "string", description: "Formato: 'Passo X: Descrição curta'" },
+                prompt_text: { type: "string", description: "Instrução completa bilíngue (PT + --- + EN)" },
                 category: { type: "string", enum: ["setup", "feature", "ui", "backend", "general"] },
+                prompt_type: { type: "string", enum: ["implementation", "review", "security"], description: "Tipo do passo: implementation (maioria), review ou security" },
               },
-              required: ["title", "prompt_text", "category"],
+              required: ["title", "prompt_text", "category", "prompt_type"],
               additionalProperties: false,
             },
           },
