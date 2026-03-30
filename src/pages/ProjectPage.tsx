@@ -22,7 +22,7 @@ import ShareProject from "@/components/project/ShareProject";
 import DebateView from "@/components/project/DebateView";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
