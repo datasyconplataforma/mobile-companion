@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectPage from "./pages/ProjectPage";
+import SkillsPage from "./pages/SkillsPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
