@@ -442,6 +442,7 @@ const ProjectPage = () => {
     { key: "prompts", icon: Zap, label: "Prompts" },
     { key: "docs", icon: Paperclip, label: "Docs" },
     { key: "skills", icon: Wrench, label: "Skills" },
+    { key: "debate", icon: Swords, label: "Debate" },
   ];
 
   // Parse attachments from stored message content for display
