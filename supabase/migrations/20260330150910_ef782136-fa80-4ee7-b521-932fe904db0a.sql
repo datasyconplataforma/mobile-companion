@@ -1,0 +1,1 @@
+CREATE POLICY "Service role can update documents" ON public.project_documents FOR UPDATE USING (true) WITH CHECK (true);

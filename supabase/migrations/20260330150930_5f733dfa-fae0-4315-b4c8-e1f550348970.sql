@@ -1,0 +1,2 @@
+DROP POLICY "Service role can update documents" ON public.project_documents;
+CREATE POLICY "Users can update project documents" ON public.project_documents FOR UPDATE USING (has_project_access(auth.uid(), project_id));
