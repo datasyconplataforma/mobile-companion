@@ -415,7 +415,9 @@ REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima e
 
 REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Escreva PRIMEIRO a versão completa em português e DEPOIS a versão em inglês, separadas por uma linha horizontal (---).
 
-REGRA CRÍTICA DE TRADUÇÃO: A versão em inglês DEVE ser uma tradução FIEL e COMPLETA da versão em português. Não é necessário ser literal palavra por palavra, mas TODAS as seções, requisitos, funcionalidades, regras e detalhes técnicos presentes no texto em português DEVEM estar presentes no texto em inglês, na mesma ordem e com a mesma lógica. O objetivo é que um desenvolvedor lendo apenas a versão em inglês consiga construir EXATAMENTE o mesmo sistema que lendo a versão em português. NÃO resuma, NÃO omita seções, NÃO invente conteúdo diferente.
+REGRA CRÍTICA DE TRADUÇÃO: A versão em inglês DEVE ser uma tradução FIEL e COMPLETA da versão em português. TODAS as seções, requisitos, funcionalidades, regras e detalhes técnicos presentes no texto em português DEVEM estar presentes no texto em inglês, na mesma ordem e com a mesma lógica. O objetivo é que um desenvolvedor lendo apenas a versão em inglês consiga construir EXATAMENTE o mesmo sistema que lendo a versão em português. NÃO resuma, NÃO omita seções, NÃO invente conteúdo diferente.
+
+REGRA ABSOLUTA DE IDIOMA: A seção ANTES do separador --- DEVE ser 100% em PORTUGUÊS. A seção DEPOIS do separador --- DEVE ser 100% em INGLÊS. NUNCA misture os idiomas. Na versão em inglês, TODOS os títulos de seções, subtítulos, descrições, nomes de features e textos explicativos DEVEM estar em inglês. Não deixe nenhuma palavra em português na versão inglesa (exceto nomes próprios). Na versão em português, não use inglês desnecessariamente. Exemplos de ERRO: escrever "Visão Geral (Overview)" na versão EN — o correto é apenas "Overview". Escrever "1. Visão Geral" na versão EN — o correto é "1. Overview".
 
 Exemplo para o PRD:
 # PRD — Nome do Projeto
