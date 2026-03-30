@@ -141,6 +141,62 @@ export type Database = {
           },
         ]
       }
+      project_debates: {
+        Row: {
+          created_at: string
+          debate_happened: boolean
+          duration_ms: number | null
+          final_output: string | null
+          id: string
+          initial_output: string | null
+          main_model: string | null
+          main_provider: string
+          project_id: string
+          review_feedback: string | null
+          reviewer_mode: string
+          reviewer_provider: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          debate_happened?: boolean
+          duration_ms?: number | null
+          final_output?: string | null
+          id?: string
+          initial_output?: string | null
+          main_model?: string | null
+          main_provider?: string
+          project_id: string
+          review_feedback?: string | null
+          reviewer_mode?: string
+          reviewer_provider?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          debate_happened?: boolean
+          duration_ms?: number | null
+          final_output?: string | null
+          id?: string
+          initial_output?: string | null
+          main_model?: string | null
+          main_provider?: string
+          project_id?: string
+          review_feedback?: string | null
+          reviewer_mode?: string
+          reviewer_provider?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_debates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_documents: {
         Row: {
           created_at: string
