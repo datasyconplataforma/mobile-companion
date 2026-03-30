@@ -129,13 +129,22 @@ const DashboardPage = () => {
           </div>
           <span className="font-semibold text-sm text-foreground">CodeBuddy</span>
         </div>
-        <button
-          onClick={signOut}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <LogOut size={14} />
-          Sair
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/skills")}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Wrench size={14} />
+            Skills
+          </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <LogOut size={14} />
+            Sair
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
