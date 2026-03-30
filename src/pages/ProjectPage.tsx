@@ -20,6 +20,7 @@ import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
 import DebateView from "@/components/project/DebateView";
+import MCPConfig from "@/components/project/MCPConfig";
 import { ChatAttachment } from "@/types/chat";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate";
