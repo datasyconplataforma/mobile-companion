@@ -13,7 +13,7 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
-import SkillList from "@/components/project/SkillList";
+// SkillList removed - skills are now managed from the centralized /skills page
 import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
