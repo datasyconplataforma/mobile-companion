@@ -224,10 +224,16 @@ const DashboardPage = () => {
                       </button>
                     )}
                     <div className="flex items-center gap-1.5">
+                      {(project as any)._shared && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground font-medium flex items-center gap-1">
+                          <Users size={10} /> Compartilhado
+                        </span>
+                      )}
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[project.status] || statusColors.planning}`}>
                         {statusLabels[project.status] || "Planejando"}
                       </span>
-                      <button
+                      {!(project as any)._shared && (
+                        <button
                         onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
                         className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
                       >
