@@ -27,6 +27,12 @@ const promptTabs: { key: PromptTab; label: string; icon: typeof Code }[] = [
   { key: "security", label: "Segurança", icon: Shield },
 ];
 
+const splitBilingual = (text: string): { pt: string; en: string } | null => {
+  const parts = text.split(/\n---\n/);
+  if (parts.length >= 2) return { pt: parts[0].trim(), en: parts[1].trim() };
+  return null;
+};
+
 const PromptList = ({ projectId }: PromptListProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
