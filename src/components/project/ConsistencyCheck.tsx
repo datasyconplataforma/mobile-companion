@@ -160,6 +160,7 @@ ${chatSummary}
       const data = await resp.json();
       setResult(data.result);
       setDebate(data.debate);
+      setFixPrompts(data.fixPrompts || []);
       setCurrentStep(3);
 
       // Invalidate debates list
