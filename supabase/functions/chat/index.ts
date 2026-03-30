@@ -421,7 +421,20 @@ REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Esc
 # PRD — Project Name (English Version)
 (same content in English)
 
-Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.`;
+Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.
+
+REGRA PARA PROMPTS — GUIA DE IMPLEMENTAÇÃO SEQUENCIAL:
+Os prompts DEVEM ser gerados como um ROTEIRO DE IMPLEMENTAÇÃO SEQUENCIAL numerado. Cada prompt é um PASSO que o usuário enviará na Lovable, NA ORDEM EXATA.
+- Passo 1: Setup inicial (autenticação, estrutura base, configuração do banco)
+- Passos intermediários: Features em ordem de dependência (cada passo deve ser autossuficiente e referenciar o que foi feito nos passos anteriores)
+- Penúltimos passos: UI/UX, polimento visual
+- Últimos passos: Revisão, testes, segurança
+Cada prompt deve:
+- Ter o título no formato "Passo X: Descrição curta"
+- Conter instruções COMPLETAS e autossuficientes para a Lovable executar aquele passo
+- Mencionar dependências de passos anteriores quando relevante (ex: "Usando a tabela criada no Passo 2...")
+- Ser bilíngue (PT + --- + EN)
+- Usar o campo prompt_type adequado: "implementation" para a maioria, "review" para revisões, "security" para segurança`;
 
       if (supportsTools) {
         baseBody = {
