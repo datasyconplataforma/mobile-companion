@@ -663,6 +663,7 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
         }
       }
 
+      const debateDuration = Date.now() - debateStartTime;
       const debate = {
         happened: !!reviewFeedback,
         reviewerMode: effectiveSettings?.reviewer_mode || "lovable",
@@ -678,6 +679,26 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
           { step: 3, label: "IA Principal refinou com base no feedback", done: !!reviewFeedback && supportsTools },
         ],
       };
+
+      // Save debate record to database
+      try {
+        await supabase.from("project_debates").insert({
+          project_id: projectId,
+          user_id: userId,
+          main_provider: debate.mainProvider,
+          main_model: debate.mainModel,
+          reviewer_provider: debate.reviewerProvider,
+          reviewer_mode: debate.reviewerMode,
+          initial_output: ai1Content.slice(0, 50000),
+          review_feedback: reviewFeedback ? reviewFeedback.slice(0, 50000) : null,
+          final_output: contentText ? contentText.slice(0, 50000) : null,
+          debate_happened: debate.happened,
+          duration_ms: debateDuration,
+        });
+        console.log("Debate record saved");
+      } catch (e) {
+        console.error("Failed to save debate record:", e);
+      }
 
       return new Response(JSON.stringify({ saved, content: contentText, debate }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
