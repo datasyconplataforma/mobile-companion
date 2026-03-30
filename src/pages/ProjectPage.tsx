@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale } from "lucide-react";
+
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
 import ChatInput from "@/components/chat/ChatInput";
@@ -13,14 +14,14 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
-// SkillList removed - skills are now managed from the centralized /skills page
+import ProjectSkills from "@/components/project/ProjectSkills";
 import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -417,6 +418,7 @@ const ProjectPage = () => {
     { key: "tasks", icon: CheckSquare, label: "Tarefas" },
     { key: "prompts", icon: Zap, label: "Prompts" },
     { key: "docs", icon: Paperclip, label: "Docs" },
+    { key: "skills", icon: Wrench, label: "Skills" },
   ];
 
   // Parse attachments from stored message content for display
@@ -526,6 +528,7 @@ const ProjectPage = () => {
       {activeTab === "prompts" && <PromptList projectId={id!} />}
       {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
+      {activeTab === "skills" && <ProjectSkills projectId={id!} />}
     </div>
   );
 };
