@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
@@ -19,9 +19,10 @@ import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
+import DebateView from "@/components/project/DebateView";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -308,6 +309,7 @@ const ProjectPage = () => {
         queryClient.invalidateQueries({ queryKey: ["project", id] });
         queryClient.invalidateQueries({ queryKey: ["tasks", id] });
         queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+        queryClient.invalidateQueries({ queryKey: ["debates", id] });
 
         let replyContent = "";
         if (savedItems.length > 0) {
@@ -417,6 +419,7 @@ const ProjectPage = () => {
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+      queryClient.invalidateQueries({ queryKey: ["debates", id] });
       if (savedItems.length > 0) {
         const debateInfo = buildDebateSummary(result.debate);
         toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
@@ -441,6 +444,7 @@ const ProjectPage = () => {
     { key: "prompts", icon: Zap, label: "Prompts" },
     { key: "docs", icon: Paperclip, label: "Docs" },
     { key: "skills", icon: Wrench, label: "Skills" },
+    { key: "debate", icon: Swords, label: "Debate" },
   ];
 
   // Parse attachments from stored message content for display
@@ -551,6 +555,7 @@ const ProjectPage = () => {
       {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
+      {activeTab === "debate" && <DebateView projectId={id!} />}
     </div>
   );
 };
