@@ -5,7 +5,7 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CopyButton from "./CopyButton";
 import ChatQuestionOptions, { parseQuestionOptions } from "./ChatQuestionOptions";
 import { Message } from "@/types/chat";
-import { Bot, User, Trash2, EyeOff, Eye } from "lucide-react";
+import { Bot, User, Trash2, EyeOff, Eye, FileText, Image as ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ChatMessageProps {
@@ -22,7 +22,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
   const isExcluded = message.excluded;
   const isStreaming = message.id === "streaming";
 
-  // Parse options from assistant messages
   const { cleanContent, options } = !isUser ? parseQuestionOptions(message.content) : { cleanContent: message.content, options: [] };
   const showOptions = options.length > 0 && isLastAssistant && !isLoading && onSendOption;
 
@@ -47,6 +46,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
             fora do contexto
           </Badge>
         )}
+
+        {/* Attachments */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {message.attachments.map((att, i) => (
+              <div key={i} className="rounded-lg overflow-hidden border border-border">
+                {att.type === "image" && att.url ? (
+                  <img
+                    src={att.url}
+                    alt={att.name}
+                    className="max-w-[200px] max-h-[150px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(att.url, "_blank")}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-secondary/50 text-xs">
+                    <FileText size={14} className="text-primary shrink-0" />
+                    <span className="truncate max-w-[180px] text-foreground">{att.name}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {isUser ? (
           <p className="text-foreground">{message.content}</p>
         ) : (
@@ -61,9 +84,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
                     return (
                       <div className="relative my-3 rounded-lg overflow-hidden border border-border">
                         <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/80 border-b border-border">
-                          <span className="text-xs font-mono text-muted-foreground">
-                            {match[1]}
-                          </span>
+                          <span className="text-xs font-mono text-muted-foreground">{match[1]}</span>
                           <CopyButton text={codeString} />
                         </div>
                         <SyntaxHighlighter
@@ -85,10 +106,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
                   }
 
                   return (
-                    <code
-                      className="px-1.5 py-0.5 rounded bg-secondary text-terminal-cyan font-mono text-xs"
-                      {...props}
-                    >
+                    <code className="px-1.5 py-0.5 rounded bg-secondary text-terminal-cyan font-mono text-xs" {...props}>
                       {children}
                     </code>
                   );
@@ -125,7 +143,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
         )}
       </div>
 
-      {/* Action buttons on hover */}
       {!isStreaming && (onDelete || onToggleExclude) && (
         <div className="absolute top-2 right-2 hidden group-hover:flex items-center gap-1">
           {onToggleExclude && (
