@@ -414,6 +414,33 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_project_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          skill_id: string
+          skill_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          skill_id: string
+          skill_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          skill_id?: string
+          skill_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
