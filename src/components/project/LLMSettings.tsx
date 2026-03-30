@@ -90,11 +90,13 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
       setApiKey((data as any).api_key || "");
       setBaseUrl((data as any).base_url || "");
       setModel((data as any).model || "");
+      setReviewerMode((data as any).reviewer_mode || "lovable");
     } else {
       setProvider("lovable");
       setApiKey("");
       setBaseUrl("");
       setModel("");
+      setReviewerMode("lovable");
     }
     setLoading(false);
   };
