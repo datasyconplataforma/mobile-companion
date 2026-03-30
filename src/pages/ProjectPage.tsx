@@ -129,6 +129,26 @@ const ProjectPage = () => {
     },
   });
 
+  // Fetch skill attachments for context enrichment
+  const { data: skillAttachments = [] } = useQuery({
+    queryKey: ["skill_attachments_for_project", id, user?.id],
+    enabled: !!user && (skills.length > 0 || globalSkills.length > 0),
+    queryFn: async () => {
+      const allSkillIds = [
+        ...skills.map((s: any) => s.id),
+        ...globalSkills.map((s: any) => s.id),
+      ];
+      if (allSkillIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("skill_attachments" as any)
+        .select("skill_id, file_name, extracted_text")
+        .in("skill_id", allSkillIds)
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading, streamingContent]);
@@ -147,13 +167,21 @@ const ProjectPage = () => {
     return keywords.some((k) => lower.includes(k)) && targets.some((t) => lower.includes(t));
   };
 
+  // Helper to enrich skill with attachment text
+  const enrichSkill = (s: any) => {
+    const atts = skillAttachments.filter((a: any) => a.skill_id === s.id && a.extracted_text);
+    const attachmentText = atts.map((a: any) => `### Anexo: ${a.file_name}\n${a.extracted_text}`).join("\n\n");
+    const fullContext = [s.context_md || "", attachmentText].filter(Boolean).join("\n\n");
+    return { name: s.name, context: fullContext };
+  };
+
   const buildContext = () => ({
     prd: project?.prd_content || "",
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
     documents: documents.filter((d) => d.extracted_text).map((d) => ({ name: d.file_name, content: d.extracted_text })),
-    skills: skills.map((s: any) => ({ name: s.name, context: s.context_md || "" })),
-    globalSkills: globalSkills.map((s: any) => ({ name: s.name, context: s.context_md || "" })),
+    skills: skills.map(enrichSkill),
+    globalSkills: globalSkills.map(enrichSkill),
     businessRules: businessRules?.content || "",
   });
 
