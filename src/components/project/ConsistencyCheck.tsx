@@ -23,13 +23,20 @@ interface DebateData {
 const providerLabel = (p: string) =>
   ({ lovable: "Lovable AI", gemini: "Google Gemini", openrouter: "OpenRouter", claude: "Claude", ollama: "Ollama" }[p] || p);
 
-const ConsistencyCheck = ({ projectId }: ConsistencyCheckProps) => {
+interface FixPrompt {
+  title: string;
+  prompt: string;
+  severity: string;
+}
+
+const ConsistencyCheck = ({ projectId, onSendToChat }: ConsistencyCheckProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [debate, setDebate] = useState<DebateData | null>(null);
+  const [fixPrompts, setFixPrompts] = useState<FixPrompt[]>([]);
   const [showPanel, setShowPanel] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({ final: true });
 
