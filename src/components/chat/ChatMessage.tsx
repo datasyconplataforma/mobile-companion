@@ -116,8 +116,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
                 },
               }}
             >
-              {message.content}
+              {cleanContent}
             </ReactMarkdown>
+            {showOptions && (
+              <ChatQuestionOptions options={options} onSelect={onSendOption!} disabled={isLoading} />
+            )}
           </div>
         )}
       </div>
