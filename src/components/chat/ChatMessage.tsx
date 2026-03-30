@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CopyButton from "./CopyButton";
+import ChatQuestionOptions, { parseQuestionOptions } from "./ChatQuestionOptions";
 import { Message } from "@/types/chat";
 import { Bot, User, Trash2, EyeOff, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
