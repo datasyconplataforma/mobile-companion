@@ -23,7 +23,7 @@ import DebateView from "@/components/project/DebateView";
 import MCPConfig from "@/components/project/MCPConfig";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate" | "mcp";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
