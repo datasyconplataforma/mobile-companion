@@ -21,6 +21,13 @@ const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDVie
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(prdContent || "");
+  const [copiedLang, setCopiedLang] = useState<string | null>(null);
+
+  const handleCopy = (text: string, lang: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedLang(lang);
+    setTimeout(() => setCopiedLang(null), 1500);
+  };
 
   const savePrd = useMutation({
     mutationFn: async (content: string) => {
