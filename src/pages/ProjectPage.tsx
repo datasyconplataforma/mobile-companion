@@ -21,7 +21,7 @@ import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills";
 
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
