@@ -455,7 +455,7 @@ const ProjectPage = () => {
       }
       // Clear local state
       setStreamingContent("");
-      setMessages([]);
+      // streamingContent is local state, clear it
       // Invalidate all queries
       queryClient.invalidateQueries({ queryKey: ["messages", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
