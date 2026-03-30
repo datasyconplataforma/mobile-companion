@@ -309,6 +309,7 @@ const ProjectPage = () => {
         queryClient.invalidateQueries({ queryKey: ["project", id] });
         queryClient.invalidateQueries({ queryKey: ["tasks", id] });
         queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+        queryClient.invalidateQueries({ queryKey: ["debates", id] });
 
         let replyContent = "";
         if (savedItems.length > 0) {
