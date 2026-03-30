@@ -124,6 +124,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
         api_key: apiKey || null,
         base_url: baseUrl || null,
         model: model || null,
+        reviewer_mode: reviewerMode,
       };
 
       const { data: existing } = await supabase
