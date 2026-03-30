@@ -705,6 +705,189 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
       });
     }
 
+    // === AUDIT ACTION: Dual AI consistency analysis ===
+    if (action === "audit") {
+      const auditStartTime = Date.now();
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const auditContext = projectContext?.auditContext || "";
+
+      // STEP 1: AI1 generates the full audit
+      const auditPrompt = `Você é um AUDITOR SÊNIOR DE PROJETOS DE SOFTWARE com mais de 15 anos de experiência. Realize uma análise COMPLETA E EXAUSTIVA do projeto abaixo.
+
+## CHECKLIST DE VERIFICAÇÃO (confirme cada item):
+- [ ] PRD foi analisado em profundidade
+- [ ] Skills/tecnologias foram verificadas contra o PRD e prompts
+- [ ] Regras de negócio foram comparadas com tarefas e PRD
+- [ ] TODAS as tarefas foram revisadas individualmente (status, descrição, granularidade)
+- [ ] TODOS os prompts foram analisados (tipo, conteúdo, cobertura)
+- [ ] TODOS os documentos anexados foram lidos e cruzados
+- [ ] Histórico de chat foi considerado para contexto
+- [ ] Consistência cruzada entre TODOS os elementos foi verificada
+
+## IDENTIFIQUE COM RIGOR:
+
+1. **🔴 Contradições** — Informações que se contradizem entre PRD, regras, docs, tasks ou prompts. Compare CADA elemento com TODOS os demais.
+2. **🟡 Inconsistências** — Skills listadas que não aparecem nos prompts/PRD. Tecnologias no PRD sem skill correspondente. Prompts que referenciam funcionalidades não descritas.
+3. **🟠 Lacunas** — Regras de negócio sem tarefas. Funcionalidades no PRD sem prompts. Tarefas sem prompts associados. Documentos com requisitos não refletidos.
+4. **🔵 Redundâncias** — Informações duplicadas, prompts sobrepostos, tarefas redundantes.
+5. **⚠️ Qualidade** — Avalie CADA elemento:
+   - PRD: clareza, completude, critérios de aceite, user stories
+   - Tarefas: granularidade, descrições, ordem lógica, dependências
+   - Prompts: especificidade, contexto, actionability para um LLM
+   - Regras de negócio: clareza, ambiguidade, completude
+   - Skills: adequação ao escopo do projeto
+   - Documentos: relevância, aproveitamento do conteúdo
+6. **🟢 Sugestões** — Melhorias concretas e priorizadas
+
+## REGRAS:
+- Cite EXATAMENTE onde está cada problema (ex: "Na tarefa 3...", "No documento X...", "No prompt de backend...")
+- NÃO ignore nenhuma seção, mesmo vazia (reporte como lacuna crítica)
+- Ao final, dê uma NOTA DE MATURIDADE (1-10) com justificativa detalhada
+
+---
+${auditContext}`;
+
+      const auditBody1 = providerConfig.transformBody({
+        messages: [
+          { role: "system", content: "Você é um auditor sênior de projetos de software. Seja extremamente rigoroso e detalhista." },
+          { role: "user", content: auditPrompt },
+        ],
+      });
+
+      const resp1 = await fetch(providerConfig.url, {
+        method: "POST",
+        headers: providerConfig.headers,
+        body: JSON.stringify(auditBody1),
+      });
+
+      if (!resp1.ok) {
+        const t = await resp1.text();
+        console.error("Audit AI1 error:", resp1.status, t);
+        return new Response(JSON.stringify({ error: "Erro na IA ao auditar" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const auditResult1 = await resp1.json();
+      const isClaude1 = llmSettings?.provider === "claude";
+      const audit1Content = isClaude1
+        ? (transformClaudeResponse(auditResult1).choices?.[0]?.message?.content || "")
+        : (auditResult1.choices?.[0]?.message?.content || "");
+      console.log("Audit AI1 done, length:", audit1Content.length);
+
+      // STEP 2: AI2 (reviewer) critiques the audit itself
+      const reviewerConfig = (effectiveSettings?.reviewer_mode === "same")
+        ? providerConfig
+        : getProviderConfig(null, LOVABLE_API_KEY);
+
+      const auditReviewPrompt = `Você é um CONTRA-AUDITOR INDEPENDENTE. Outro auditor analisou um projeto e produziu o relatório abaixo. Sua missão é:
+
+1. **Verificar se o auditor foi rigoroso o suficiente** — Ele deixou passar alguma contradição? Ignorou alguma seção?
+2. **Identificar falsos positivos** — O auditor apontou problemas que na verdade não existem?
+3. **Encontrar problemas adicionais** — Há contradições ou lacunas que o primeiro auditor NÃO percebeu?
+4. **Avaliar a nota** — A nota de maturidade está justa? Deveria ser mais alta ou mais baixa?
+
+CONTEXTO ORIGINAL DO PROJETO:
+${auditContext.slice(0, 6000)}
+
+RELATÓRIO DO PRIMEIRO AUDITOR:
+${audit1Content.slice(0, 8000)}
+
+Responda com uma análise objetiva e direta. Liste especificamente o que foi bem feito e o que precisa ser corrigido no relatório.`;
+
+      let auditReviewFeedback = "";
+      try {
+        const reviewBody = reviewerConfig.transformBody({
+          messages: [
+            { role: "system", content: "Você é um contra-auditor independente. Seja rigoroso e imparcial." },
+            { role: "user", content: auditReviewPrompt },
+          ],
+        });
+        const resp2 = await fetch(reviewerConfig.url, {
+          method: "POST",
+          headers: reviewerConfig.headers,
+          body: JSON.stringify(reviewBody),
+        });
+        if (resp2.ok) {
+          const reviewResult = await resp2.json();
+          auditReviewFeedback = reviewResult.choices?.[0]?.message?.content || "";
+          console.log("Audit AI2 review done, length:", auditReviewFeedback.length);
+        }
+      } catch (e) {
+        console.error("Audit AI2 error:", e);
+      }
+
+      // STEP 3: AI1 produces final consolidated audit
+      let finalAudit = audit1Content;
+      if (auditReviewFeedback) {
+        try {
+          const refineBody = providerConfig.transformBody({
+            messages: [
+              { role: "system", content: "Você é um auditor sênior. Produza o relatório final definitivo." },
+              { role: "user", content: auditPrompt },
+              { role: "assistant", content: audit1Content.slice(0, 6000) },
+              { role: "user", content: `Um CONTRA-AUDITOR INDEPENDENTE revisou seu relatório e encontrou os seguintes pontos:\n\n${auditReviewFeedback}\n\nProduza o RELATÓRIO FINAL CONSOLIDADO, incorporando as correções e pontos adicionais identificados. Mantenha o formato original (seções, emojis, nota). Corrija falsos positivos e adicione problemas que você não havia detectado.` },
+            ],
+          });
+          const resp3 = await fetch(providerConfig.url, {
+            method: "POST",
+            headers: providerConfig.headers,
+            body: JSON.stringify(refineBody),
+          });
+          if (resp3.ok) {
+            const finalResult = await resp3.json();
+            finalAudit = finalResult.choices?.[0]?.message?.content || audit1Content;
+            console.log("Audit AI1 refinement done");
+          }
+        } catch (e) {
+          console.error("Audit AI1 refinement error:", e);
+        }
+      }
+
+      const auditDuration = Date.now() - auditStartTime;
+
+      // Save audit debate record
+      try {
+        await supabase.from("project_debates").insert({
+          project_id: projectId,
+          user_id: userId,
+          main_provider: effectiveSettings?.provider || "lovable",
+          main_model: effectiveSettings?.model || null,
+          reviewer_provider: (effectiveSettings?.reviewer_mode === "same")
+            ? (effectiveSettings?.provider || "lovable")
+            : "lovable",
+          reviewer_mode: effectiveSettings?.reviewer_mode || "lovable",
+          initial_output: audit1Content.slice(0, 50000),
+          review_feedback: auditReviewFeedback ? auditReviewFeedback.slice(0, 50000) : null,
+          final_output: finalAudit.slice(0, 50000),
+          debate_happened: !!auditReviewFeedback,
+          duration_ms: auditDuration,
+        });
+      } catch (e) {
+        console.error("Failed to save audit debate:", e);
+      }
+
+      return new Response(JSON.stringify({
+        result: finalAudit,
+        debate: {
+          happened: !!auditReviewFeedback,
+          initialAudit: audit1Content,
+          reviewFeedback: auditReviewFeedback || null,
+          finalAudit,
+          mainProvider: effectiveSettings?.provider || "lovable",
+          reviewerProvider: (effectiveSettings?.reviewer_mode === "same")
+            ? (effectiveSettings?.provider || "lovable")
+            : "lovable",
+          durationMs: auditDuration,
+        },
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Default: streaming chat
     const baseBody: any = {
       messages: [
