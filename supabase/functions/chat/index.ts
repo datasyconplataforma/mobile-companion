@@ -877,13 +877,14 @@ Cada prompt deve:
 - Focar em UM problema específico encontrado na auditoria
 - Usar linguagem imperativa (ex: "Atualize o PRD para...", "Adicione tarefas para...")
 - Ter no máximo 2-3 frases
+- Ser BILÍNGUE: primeiro em português, depois "---", depois a mesma instrução em inglês
 
 RELATÓRIO DE AUDITORIA:
 ${finalAudit.slice(0, 6000)}
 
 Responda EXCLUSIVAMENTE com um JSON válido neste formato (sem markdown, sem texto antes/depois):
 [
-  {"title": "título curto (max 6 palavras)", "prompt": "instrução completa para o chat", "severity": "high|medium|low"}
+  {"title": "título curto em PT (max 6 palavras)", "prompt": "instrução em PT\\n---\\ninstruction in EN", "severity": "high|medium|low"}
 ]` },
           ],
         });
