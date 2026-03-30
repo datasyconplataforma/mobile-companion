@@ -56,6 +56,7 @@ export type Database = {
         Row: {
           context_md: string | null
           created_at: string
+          github_url: string | null
           id: string
           name: string
           user_id: string
@@ -63,6 +64,7 @@ export type Database = {
         Insert: {
           context_md?: string | null
           created_at?: string
+          github_url?: string | null
           id?: string
           name: string
           user_id: string
@@ -70,6 +72,7 @@ export type Database = {
         Update: {
           context_md?: string | null
           created_at?: string
+          github_url?: string | null
           id?: string
           name?: string
           user_id?: string
@@ -306,6 +309,7 @@ export type Database = {
         Row: {
           context_md: string | null
           created_at: string
+          github_url: string | null
           id: string
           name: string
           project_id: string
@@ -314,6 +318,7 @@ export type Database = {
         Insert: {
           context_md?: string | null
           created_at?: string
+          github_url?: string | null
           id?: string
           name: string
           project_id: string
@@ -322,6 +327,7 @@ export type Database = {
         Update: {
           context_md?: string | null
           created_at?: string
+          github_url?: string | null
           id?: string
           name?: string
           project_id?: string
@@ -416,6 +422,45 @@ export type Database = {
           prd_content?: string | null
           status?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      skill_attachments: {
+        Row: {
+          created_at: string
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          skill_id: string
+          skill_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number
+          file_type: string
+          id?: string
+          skill_id: string
+          skill_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          skill_id?: string
+          skill_type?: string
           user_id?: string
         }
         Relationships: []
