@@ -32,29 +32,63 @@ const DocumentList: React.FC<DocumentListProps> = ({ projectId }) => {
     mutationFn: async (file: File) => {
       const ext = file.name.split(".").pop();
       const path = `${user!.id}/${projectId}/${crypto.randomUUID()}.${ext}`;
+      const fileType = file.type || "application/octet-stream";
 
       const { error: uploadError } = await supabase.storage
         .from("project-documents")
         .upload(path, file);
       if (uploadError) throw uploadError;
 
-      // Extract text for common text-based formats
+      // Extract text for common text-based formats locally
       let extractedText: string | null = null;
       const textTypes = ["text/plain", "text/markdown", "text/csv", "application/json"];
       if (textTypes.includes(file.type) || file.name.endsWith(".md") || file.name.endsWith(".txt")) {
         extractedText = await file.text();
       }
 
-      const { error: dbError } = await supabase.from("project_documents").insert({
+      const { data: docData, error: dbError } = await supabase.from("project_documents").insert({
         project_id: projectId,
         user_id: user!.id,
         file_name: file.name,
         file_path: path,
-        file_type: file.type || "application/octet-stream",
+        file_type: fileType,
         file_size: file.size,
         extracted_text: extractedText,
-      });
+      }).select("id").single();
       if (dbError) throw dbError;
+
+      // For PDFs and non-text files, trigger server-side extraction
+      const needsExtraction = !extractedText && (
+        fileType === "application/pdf" || file.name.endsWith(".pdf")
+      );
+
+      if (needsExtraction && docData?.id) {
+        // Fire and forget - extraction happens in background
+        const EXTRACT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-text`;
+        fetch(EXTRACT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            documentId: docData.id,
+            projectId,
+            filePath: path,
+            fileName: file.name,
+            fileType,
+          }),
+        }).then(async (resp) => {
+          if (resp.ok) {
+            queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
+            toast({ title: "Texto extraído do PDF ✅", description: "O documento agora será considerado pela IA." });
+          } else {
+            const err = await resp.json().catch(() => ({}));
+            console.error("Extraction failed:", err);
+            toast({ title: "Aviso", description: "Não foi possível extrair texto do PDF.", variant: "destructive" });
+          }
+        }).catch(console.error);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents", projectId] });
