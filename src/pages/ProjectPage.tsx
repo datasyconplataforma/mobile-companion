@@ -438,6 +438,32 @@ const ProjectPage = () => {
     }
   };
 
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await Promise.all([
+        supabase.from("chat_messages").delete().eq("project_id", id!),
+        supabase.from("project_tasks").delete().eq("project_id", id!),
+        supabase.from("project_prompts").delete().eq("project_id", id!),
+        supabase.from("project_debates").delete().eq("project_id", id!),
+        supabase.from("projects").update({ prd_content: null }).eq("id", id!),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["messages", id] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+      queryClient.invalidateQueries({ queryKey: ["debates", id] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+      setActiveTab("chat");
+      toast({ title: "Projeto resetado", description: "Chat, PRD, tarefas, prompts e debates foram limpos." });
+    } catch (err) {
+      console.error("Reset error:", err);
+      toast({ title: "Erro", description: "Falha ao resetar o projeto.", variant: "destructive" });
+    } finally {
+      setIsResetting(false);
+      setShowResetConfirm(false);
+    }
+  };
+
   const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
     { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "rules", icon: Scale, label: "Regras" },
