@@ -171,7 +171,7 @@ const tools = [
     type: "function",
     function: {
       name: "save_prompts",
-      description: "Salva prompts prontos para usar na Lovable. Chamar quando o usuário pedir para gerar prompts.",
+      description: "Salva prompts como guia de implementação sequencial para a Lovable. Cada prompt é um passo numerado.",
       parameters: {
         type: "object",
         properties: {
@@ -180,11 +180,12 @@ const tools = [
             items: {
               type: "object",
               properties: {
-                title: { type: "string" },
-                prompt_text: { type: "string" },
+                title: { type: "string", description: "Formato: 'Passo X: Descrição curta'" },
+                prompt_text: { type: "string", description: "Instrução completa bilíngue (PT + --- + EN)" },
                 category: { type: "string", enum: ["setup", "feature", "ui", "backend", "general"] },
+                prompt_type: { type: "string", enum: ["implementation", "review", "security"], description: "Tipo do passo: implementation (maioria), review ou security" },
               },
-              required: ["title", "prompt_text", "category"],
+              required: ["title", "prompt_text", "category", "prompt_type"],
               additionalProperties: false,
             },
           },
@@ -421,7 +422,20 @@ REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Esc
 # PRD — Project Name (English Version)
 (same content in English)
 
-Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.`;
+Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.
+
+REGRA PARA PROMPTS — GUIA DE IMPLEMENTAÇÃO SEQUENCIAL:
+Os prompts DEVEM ser gerados como um ROTEIRO DE IMPLEMENTAÇÃO SEQUENCIAL numerado. Cada prompt é um PASSO que o usuário enviará na Lovable, NA ORDEM EXATA.
+- Passo 1: Setup inicial (autenticação, estrutura base, configuração do banco)
+- Passos intermediários: Features em ordem de dependência (cada passo deve ser autossuficiente e referenciar o que foi feito nos passos anteriores)
+- Penúltimos passos: UI/UX, polimento visual
+- Últimos passos: Revisão, testes, segurança
+Cada prompt deve:
+- Ter o título no formato "Passo X: Descrição curta"
+- Conter instruções COMPLETAS e autossuficientes para a Lovable executar aquele passo
+- Mencionar dependências de passos anteriores quando relevante (ex: "Usando a tabela criada no Passo 2...")
+- Ser bilíngue (PT + --- + EN)
+- Usar o campo prompt_type adequado: "implementation" para a maioria, "review" para revisões, "security" para segurança`;
 
       if (supportsTools) {
         baseBody = {
@@ -614,6 +628,7 @@ Responda com uma lista objetiva de melhorias necessárias. Seja direto e especí
                 project_id: projectId, user_id: userId,
                 title: p.title, prompt_text: p.prompt_text,
                 category: p.category || "general", sort_order: i,
+                prompt_type: p.prompt_type || "implementation",
               }));
               await supabase.from("project_prompts").insert(promptRows);
               saved.prompts = true;
@@ -862,13 +877,14 @@ Cada prompt deve:
 - Focar em UM problema específico encontrado na auditoria
 - Usar linguagem imperativa (ex: "Atualize o PRD para...", "Adicione tarefas para...")
 - Ter no máximo 2-3 frases
+- Ser BILÍNGUE: primeiro em português, depois "---", depois a mesma instrução em inglês
 
 RELATÓRIO DE AUDITORIA:
 ${finalAudit.slice(0, 6000)}
 
 Responda EXCLUSIVAMENTE com um JSON válido neste formato (sem markdown, sem texto antes/depois):
 [
-  {"title": "título curto (max 6 palavras)", "prompt": "instrução completa para o chat", "severity": "high|medium|low"}
+  {"title": "título curto em PT (max 6 palavras)", "prompt": "instrução em PT\\n---\\ninstruction in EN", "severity": "high|medium|low"}
 ]` },
           ],
         });

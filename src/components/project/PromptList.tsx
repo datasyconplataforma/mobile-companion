@@ -218,6 +218,9 @@ const PromptList = ({ projectId }: PromptListProps) => {
               <div key={prompt.id} className="p-4 rounded-xl bg-card border border-border group">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold shrink-0">
+                      {prompt.sort_order + 1}
+                    </span>
                     <h3 className="text-sm font-semibold text-foreground">{prompt.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${categoryColors[prompt.category] || categoryColors.general}`}>
                       {prompt.category}
