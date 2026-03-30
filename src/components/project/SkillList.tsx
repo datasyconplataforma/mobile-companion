@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { X, Plus, Loader2, Wrench, Globe, FolderOpen } from "lucide-react";
+import { X, Plus, Loader2, Wrench, Globe, FolderOpen, Github } from "lucide-react";
 
 interface SkillListProps {
   projectId: string;
