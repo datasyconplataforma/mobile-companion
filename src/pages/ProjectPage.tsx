@@ -297,6 +297,7 @@ const ProjectPage = () => {
           replyContent = result.content || "Preciso de mais detalhes para gerar. Continue descrevendo seu projeto!";
         }
         if (result.content && savedItems.length > 0) replyContent += "\n\n" + result.content;
+        replyContent += buildDebateSummary(result.debate);
 
         await saveMessage.mutateAsync({ role: "assistant", content: replyContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
