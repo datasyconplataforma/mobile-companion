@@ -17,10 +17,14 @@ interface ChatMessageProps {
   isLoading?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude, onSendOption, isLastAssistant, isLoading }) => {
   const isUser = message.role === "user";
   const isExcluded = message.excluded;
   const isStreaming = message.id === "streaming";
+
+  // Parse options from assistant messages
+  const { cleanContent, options } = !isUser ? parseQuestionOptions(message.content) : { cleanContent: message.content, options: [] };
+  const showOptions = options.length > 0 && isLastAssistant && !isLoading && onSendOption;
 
   return (
     <div
