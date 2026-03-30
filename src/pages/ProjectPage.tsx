@@ -18,6 +18,7 @@ import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
+import { ChatAttachment } from "@/types/chat";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
@@ -36,11 +37,7 @@ const ProjectPage = () => {
   const { data: project } = useQuery({
     queryKey: ["project", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", id!)
-        .single();
+      const { data, error } = await supabase.from("projects").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
@@ -50,9 +47,7 @@ const ProjectPage = () => {
     queryKey: ["messages", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("project_id", id!)
+        .from("chat_messages").select("*").eq("project_id", id!)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
@@ -62,11 +57,7 @@ const ProjectPage = () => {
   const { data: tasks = [] } = useQuery({
     queryKey: ["tasks", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_tasks")
-        .select("*")
-        .eq("project_id", id!)
-        .order("sort_order", { ascending: true });
+      const { data, error } = await supabase.from("project_tasks").select("*").eq("project_id", id!).order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -75,11 +66,7 @@ const ProjectPage = () => {
   const { data: prompts = [] } = useQuery({
     queryKey: ["prompts", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_prompts")
-        .select("*")
-        .eq("project_id", id!)
-        .order("sort_order", { ascending: true });
+      const { data, error } = await supabase.from("project_prompts").select("*").eq("project_id", id!).order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -88,11 +75,7 @@ const ProjectPage = () => {
   const { data: documents = [] } = useQuery({
     queryKey: ["documents", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_documents")
-        .select("*")
-        .eq("project_id", id!)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("project_documents").select("*").eq("project_id", id!).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -101,11 +84,7 @@ const ProjectPage = () => {
   const { data: skills = [] } = useQuery({
     queryKey: ["skills", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_skills" as any)
-        .select("*")
-        .eq("project_id", id!)
-        .order("created_at", { ascending: true });
+      const { data, error } = await supabase.from("project_skills" as any).select("*").eq("project_id", id!).order("created_at", { ascending: true });
       if (error) throw error;
       return data as any[];
     },
@@ -114,11 +93,7 @@ const ProjectPage = () => {
   const { data: businessRules } = useQuery({
     queryKey: ["business_rules", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("project_business_rules" as any)
-        .select("*")
-        .eq("project_id", id!)
-        .maybeSingle();
+      const { data, error } = await supabase.from("project_business_rules" as any).select("*").eq("project_id", id!).maybeSingle();
       if (error) throw error;
       return data as any;
     },
@@ -130,9 +105,7 @@ const ProjectPage = () => {
 
   const saveMessage = useMutation({
     mutationFn: async ({ role, content }: { role: string; content: string }) => {
-      const { error } = await supabase
-        .from("chat_messages")
-        .insert({ project_id: id!, user_id: user!.id, role, content });
+      const { error } = await supabase.from("chat_messages").insert({ project_id: id!, user_id: user!.id, role, content });
       if (error) throw error;
     },
   });
@@ -148,12 +121,48 @@ const ProjectPage = () => {
     prd: project?.prd_content || "",
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
-    documents: documents
-      .filter((d) => d.extracted_text)
-      .map((d) => ({ name: d.file_name, content: d.extracted_text })),
+    documents: documents.filter((d) => d.extracted_text).map((d) => ({ name: d.file_name, content: d.extracted_text })),
     skills: skills.map((s: any) => s.name),
     businessRules: businessRules?.content || "",
   });
+
+  const handleUploadFile = async (file: File): Promise<ChatAttachment | null> => {
+    try {
+      const isImage = file.type.startsWith("image/");
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `${user!.id}/${id}/${crypto.randomUUID()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage.from("project-documents").upload(path, file);
+      if (uploadError) throw uploadError;
+
+      if (isImage) {
+        const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(path);
+        return { type: "image", name: file.name, url: urlData.publicUrl };
+      } else {
+        // Text-based: extract content
+        let extractedText: string | null = null;
+        const textTypes = ["text/plain", "text/markdown", "text/csv", "application/json"];
+        if (textTypes.includes(file.type) || file.name.endsWith(".md") || file.name.endsWith(".txt")) {
+          extractedText = await file.text();
+        }
+
+        // Also save to project_documents for RAG
+        await supabase.from("project_documents").insert({
+          project_id: id!, user_id: user!.id,
+          file_name: file.name, file_path: path,
+          file_type: file.type || "application/octet-stream",
+          file_size: file.size, extracted_text: extractedText,
+        });
+        queryClient.invalidateQueries({ queryKey: ["documents", id] });
+
+        return { type: "document", name: file.name, content: extractedText || undefined };
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast({ title: "Erro", description: "Falha ao enviar arquivo.", variant: "destructive" });
+      return null;
+    }
+  };
 
   const handleDeleteMessage = async (messageId: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", messageId);
@@ -173,40 +182,43 @@ const ProjectPage = () => {
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
   };
 
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, attachments?: ChatAttachment[]) => {
+    // Build enriched content with attachments
+    let enrichedContent = content;
+    if (attachments && attachments.length > 0) {
+      const attachmentParts: string[] = [];
+      for (const att of attachments) {
+        if (att.type === "document" && att.content) {
+          attachmentParts.push(`\n\n📎 **Documento anexado: ${att.name}**\n\`\`\`\n${att.content.slice(0, 8000)}\n\`\`\``);
+        } else if (att.type === "image" && att.url) {
+          attachmentParts.push(`\n\n🖼️ **Imagem anexada: ${att.name}**\n![${att.name}](${att.url})`);
+        }
+      }
+      enrichedContent = content + attachmentParts.join("");
+    }
+
     // Save user message
-    await saveMessage.mutateAsync({ role: "user", content });
+    await saveMessage.mutateAsync({ role: "user", content: enrichedContent });
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
 
     const shouldGenerate = isGenerateRequest(content);
 
     if (shouldGenerate) {
-      // Use generate action (non-streaming with tool calling)
       setIsLoading(true);
       try {
         const historyMessages = [
           ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-          { role: "user" as const, content },
+          { role: "user" as const, content: enrichedContent },
         ];
 
         const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
         const resp = await fetch(CHAT_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            messages: historyMessages,
-            projectContext: buildContext(),
-            projectId: id,
-            userId: user!.id,
-            action: "generate",
-          }),
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+          body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id, userId: user!.id, action: "generate" }),
         });
 
         if (!resp.ok) throw new Error("Failed to generate");
-
         const result = await resp.json();
         const savedItems: string[] = [];
         if (result.saved?.prd) savedItems.push("PRD");
@@ -224,9 +236,7 @@ const ProjectPage = () => {
         } else {
           replyContent = result.content || "Preciso de mais detalhes para gerar. Continue descrevendo seu projeto!";
         }
-        if (result.content && savedItems.length > 0) {
-          replyContent += "\n\n" + result.content;
-        }
+        if (result.content && savedItems.length > 0) replyContent += "\n\n" + result.content;
 
         await saveMessage.mutateAsync({ role: "assistant", content: replyContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
@@ -242,20 +252,16 @@ const ProjectPage = () => {
     // Default: streaming chat
     setIsLoading(true);
     setStreamingContent("");
-
     try {
       const historyMessages = [
         ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-        { role: "user" as const, content },
+        { role: "user" as const, content: enrichedContent },
       ];
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id }),
       });
 
@@ -278,7 +284,6 @@ const ProjectPage = () => {
         const { done, value } = await reader.read();
         if (done) break;
         textBuffer += decoder.decode(value, { stream: true });
-
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
@@ -291,18 +296,11 @@ const ProjectPage = () => {
           try {
             const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (delta) {
-              fullContent += delta;
-              setStreamingContent(fullContent);
-            }
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
+            if (delta) { fullContent += delta; setStreamingContent(fullContent); }
+          } catch { textBuffer = line + "\n" + textBuffer; break; }
         }
       }
 
-      // Save assistant message
       if (fullContent) {
         await saveMessage.mutateAsync({ role: "assistant", content: fullContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
@@ -320,39 +318,24 @@ const ProjectPage = () => {
       toast({ title: "Continue conversando", description: "A IA precisa de mais contexto para gerar o PRD. Continue descrevendo seu projeto no chat!" });
       return;
     }
-
     setIsGenerating(true);
     try {
       const historyMessages = messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
-
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: historyMessages,
-          projectContext: buildContext(),
-          projectId: id,
-          userId: user!.id,
-          action: "generate",
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id, userId: user!.id, action: "generate" }),
       });
-
       if (!resp.ok) throw new Error("Failed to generate");
-
       const result = await resp.json();
       const savedItems: string[] = [];
       if (result.saved?.prd) savedItems.push("PRD");
       if (result.saved?.tasks) savedItems.push("Tarefas");
       if (result.saved?.prompts) savedItems.push("Prompts");
-
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["prompts", id] });
-
       if (savedItems.length > 0) {
         toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
         await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}` });
@@ -377,53 +360,56 @@ const ProjectPage = () => {
     { key: "docs", icon: Paperclip, label: "Docs" },
   ];
 
+  // Parse attachments from stored message content for display
+  const parseStoredAttachments = (content: string) => {
+    const attachments: ChatAttachment[] = [];
+    const imgRegex = /🖼️ \*\*Imagem anexada: (.+?)\*\*\n!\[.+?\]\((.+?)\)/g;
+    const docRegex = /📎 \*\*Documento anexado: (.+?)\*\*/g;
+    let match;
+    while ((match = imgRegex.exec(content)) !== null) {
+      attachments.push({ type: "image", name: match[1], url: match[2] });
+    }
+    while ((match = docRegex.exec(content)) !== null) {
+      attachments.push({ type: "document", name: match[1] });
+    }
+    // Clean content for display
+    let clean = content
+      .replace(/\n\n🖼️ \*\*Imagem anexada: .+?\*\*\n!\[.+?\]\(.+?\)/g, "")
+      .replace(/\n\n📎 \*\*Documento anexado: .+?\*\*\n```\n[\s\S]*?\n```/g, "")
+      .trim();
+    return { attachments, cleanContent: clean };
+  };
+
   return (
     <div className="h-dvh flex flex-col bg-background">
-      {/* Header */}
       <header className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-border bg-card">
         <button onClick={() => navigate("/")} className="p-1 text-muted-foreground hover:text-foreground">
           <ArrowLeft size={18} />
         </button>
-        <span className="font-semibold text-sm text-foreground truncate flex-1">
-          {project?.name || "..."}
-        </span>
+        <span className="font-semibold text-sm text-foreground truncate flex-1">{project?.name || "..."}</span>
         <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
         <ConsistencyCheck projectId={id!} />
-        <GitHubConnection
-          projectId={id!}
-          githubRepoUrl={project?.github_repo_url}
-          onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })}
-        />
+        <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
         <LLMSettings projectId={id!} />
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerating || isLoading || messages.length < 4}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all"
-        >
+        <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
           {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
           Gerar PRD
         </button>
       </header>
 
-      {/* Tabs */}
       <div className="shrink-0 flex border-b border-border bg-card/50">
         {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-              activeTab === tab.key
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
+              activeTab === tab.key ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
+            }`}>
             <tab.icon size={14} />
             {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
       {activeTab === "chat" && (
         <>
           <div ref={scrollRef} className="flex-1 overflow-y-auto scrollbar-thin">
@@ -437,12 +423,19 @@ const ProjectPage = () => {
             ) : (
               <div className="max-w-2xl mx-auto">
                 {messages.map((msg, idx) => {
-                  const isLastAssistant = msg.role === "assistant" && 
-                    !messages.slice(idx + 1).some(m => m.role === "assistant");
+                  const isLastAssistant = msg.role === "assistant" && !messages.slice(idx + 1).some(m => m.role === "assistant");
+                  const parsed = msg.role === "user" ? parseStoredAttachments(msg.content) : { attachments: [], cleanContent: msg.content };
                   return (
                     <ChatMessage
                       key={msg.id}
-                      message={{ id: msg.id, role: msg.role as "user" | "assistant", content: msg.content, timestamp: new Date(msg.created_at), excluded: !!(msg as any).excluded }}
+                      message={{
+                        id: msg.id,
+                        role: msg.role as "user" | "assistant",
+                        content: parsed.cleanContent,
+                        timestamp: new Date(msg.created_at),
+                        excluded: !!msg.excluded,
+                        attachments: parsed.attachments.length > 0 ? parsed.attachments : undefined,
+                      }}
                       onDelete={handleDeleteMessage}
                       onToggleExclude={handleToggleExclude}
                       onSendOption={handleSend}
@@ -452,15 +445,18 @@ const ProjectPage = () => {
                   );
                 })}
                 {streamingContent && (
-                  <ChatMessage
-                    message={{ id: "streaming", role: "assistant", content: streamingContent, timestamp: new Date() }}
-                  />
+                  <ChatMessage message={{ id: "streaming", role: "assistant", content: streamingContent, timestamp: new Date() }} />
                 )}
                 {isLoading && !streamingContent && <TypingIndicator />}
               </div>
             )}
           </div>
-          <ChatInput onSend={handleSend} isLoading={isLoading} />
+          <ChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            documents={documents}
+            onUploadFile={handleUploadFile}
+          />
         </>
       )}
 
