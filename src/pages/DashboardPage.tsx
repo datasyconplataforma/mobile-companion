@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Terminal, Plus, LogOut, FolderOpen, Loader2, Trash2, Pencil, X, Check } from "lucide-react";
+import { Terminal, Plus, LogOut, FolderOpen, Loader2, Trash2, Pencil, X, Check, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const statusLabels: Record<string, string> = {
@@ -34,12 +34,35 @@ const DashboardPage = () => {
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Own projects
+      const { data: ownProjects, error } = await supabase
         .from("projects")
         .select("*")
+        .eq("user_id", user!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Shared projects
+      const { data: shares } = await supabase
+        .from("project_shares" as any)
+        .select("project_id")
+        .eq("shared_with_user_id", user!.id);
+
+      let sharedProjects: typeof ownProjects = [];
+      if (shares && shares.length > 0) {
+        const sharedIds = (shares as any[]).map((s: any) => s.project_id);
+        const { data: sp } = await supabase
+          .from("projects")
+          .select("*")
+          .in("id", sharedIds)
+          .order("updated_at", { ascending: false });
+        sharedProjects = sp || [];
+      }
+
+      return [
+        ...ownProjects.map((p) => ({ ...p, _shared: false })),
+        ...sharedProjects.map((p) => ({ ...p, _shared: true })),
+      ];
     },
   });
 
@@ -201,21 +224,30 @@ const DashboardPage = () => {
                       </button>
                     )}
                     <div className="flex items-center gap-1.5">
+                      {(project as any)._shared && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground font-medium flex items-center gap-1">
+                          <Users size={10} /> Compartilhado
+                        </span>
+                      )}
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[project.status] || statusColors.planning}`}>
                         {statusLabels[project.status] || "Planejando"}
                       </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
-                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
-                        className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {!(project as any)._shared && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
+                            className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
+                            className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => navigate(`/project/${project.id}`)} className="w-full text-left">

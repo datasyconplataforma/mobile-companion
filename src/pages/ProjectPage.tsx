@@ -17,6 +17,7 @@ import SkillList from "@/components/project/SkillList";
 import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
+import ShareProject from "@/components/project/ShareProject";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules";
 
@@ -386,6 +387,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
         <ConsistencyCheck projectId={id!} />
         <GitHubConnection
           projectId={id!}
