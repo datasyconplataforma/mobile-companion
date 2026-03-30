@@ -20,7 +20,7 @@ const AuthPage = () => {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +42,7 @@ const AuthPage = () => {
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <Terminal size={20} className="text-primary" />
           </div>
-          <span className="text-xl font-bold text-foreground">CodeBuddy</span>
+          <span className="text-xl font-bold text-foreground">Datasycon</span>
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6">
