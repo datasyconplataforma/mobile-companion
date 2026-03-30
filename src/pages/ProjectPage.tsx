@@ -353,10 +353,10 @@ const ProjectPage = () => {
 
   const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
     { key: "chat", icon: MessageSquare, label: "Chat" },
+    { key: "rules", icon: Scale, label: "Regras" },
     { key: "prd", icon: FileText, label: "PRD" },
     { key: "tasks", icon: CheckSquare, label: "Tarefas" },
     { key: "prompts", icon: Zap, label: "Prompts" },
-    { key: "rules", icon: Scale, label: "Regras" },
     { key: "docs", icon: Paperclip, label: "Docs" },
   ];
 
