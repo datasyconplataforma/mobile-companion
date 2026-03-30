@@ -399,7 +399,18 @@ serve(async (req) => {
 
 IMPORTANTE: Mesmo que a conversa tenha poucos detalhes, use o que está disponível (incluindo o PRD existente se houver) para gerar os documentos. SEMPRE chame as 3 ferramentas.
 
-REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.`;
+REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima em "TAREFAS DO PROJETO"), você DEVE manter os MESMOS títulos e a MESMA estrutura. Só altere os títulos se o escopo do projeto mudou drasticamente. Manter consistência nos nomes das tarefas é essencial para não confundir o usuário.
+
+REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Escreva PRIMEIRO a versão em português e DEPOIS a versão em inglês, separadas por uma linha horizontal (---). Exemplo para o PRD:
+# PRD — Nome do Projeto
+(conteúdo em português)
+
+---
+
+# PRD — Project Name (English Version)
+(same content in English)
+
+Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.`;
         baseBody = {
           messages: [
             { role: "system", content: systemPrompt + generateInstruction },
@@ -413,11 +424,13 @@ REGRA CRÍTICA PARA TAREFAS: Se já existem tarefas no projeto (listadas acima e
         // JSON fallback for providers without tool calling support
         const jsonPrompt = systemPrompt + `\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable.
 
+REGRA DE IDIOMA: O PRD e os prompts devem ser BILÍNGUES (português primeiro, depois inglês separado por ---).
+
 Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes/depois) neste formato exato:
 {
-  "prd_content": "conteúdo completo do PRD em markdown",
+  "prd_content": "conteúdo completo do PRD em markdown (bilíngue: PT + EN separados por ---)",
   "tasks": [{"title": "tarefa 1", "description": "descrição"}],
-  "prompts": [{"title": "titulo", "prompt_text": "texto do prompt", "category": "setup|feature|ui|backend|general"}],
+  "prompts": [{"title": "titulo", "prompt_text": "texto do prompt em PT\\n---\\ntexto em EN", "category": "setup|feature|ui|backend|general"}],
   "message": "mensagem opcional para o usuário"
 }`;
         baseBody = {
