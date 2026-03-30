@@ -127,8 +127,8 @@ const MCPConfig = ({ projectId }: { projectId: string }) => {
       </div>
 
       <div className="border-t border-border pt-4">
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-          <p className="text-xs text-amber-200 leading-relaxed">
+        <div className="bg-accent/30 border border-accent/50 rounded-lg p-3">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             <strong>⚠️ Nota:</strong> O token de acesso expira periodicamente. Se a conexão parar de funcionar, 
             volte aqui para copiar um novo token atualizado.
           </p>
