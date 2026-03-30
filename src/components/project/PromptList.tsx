@@ -245,17 +245,54 @@ const PromptList = ({ projectId }: PromptListProps) => {
                     >
                       <Trash2 size={13} />
                     </button>
-                    <button
-                      onClick={() => handleCopy(prompt.id, prompt.prompt_text)}
-                      className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {copiedId === prompt.id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
-                    </button>
+                    {!splitBilingual(prompt.prompt_text) && (
+                      <button
+                        onClick={() => handleCopy(prompt.id, prompt.prompt_text)}
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {copiedId === prompt.id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
+                      </button>
+                    )}
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
-                  {prompt.prompt_text}
-                </p>
+                {(() => {
+                  const bilingual = splitBilingual(prompt.prompt_text);
+                  if (bilingual) {
+                    return (
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div className="rounded-lg bg-secondary/50 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇧🇷 PT</span>
+                            <button
+                              onClick={() => handleCopy(`${prompt.id}-pt`, bilingual.pt)}
+                              className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {copiedId === `${prompt.id}-pt` ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">{bilingual.pt}</p>
+                        </div>
+                        <div className="rounded-lg bg-secondary/50 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇺🇸 EN</span>
+                            <button
+                              onClick={() => handleCopy(`${prompt.id}-en`, bilingual.en)}
+                              className="p-1 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {copiedId === `${prompt.id}-en` ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">{bilingual.en}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap">
+                      {prompt.prompt_text}
+                    </p>
+                  );
+                })()}
               </div>
             ))}
           </div>
