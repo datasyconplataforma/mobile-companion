@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { FileText, Pencil, Eye, Save, Loader2, RefreshCw } from "lucide-react";
+import { FileText, Pencil, Eye, Save, Loader2, RefreshCw, Copy, Check } from "lucide-react";
+
+const splitBilingual = (text: string) => {
+  const parts = text.split(/\n---\n/);
+  if (parts.length >= 2) return { pt: parts[0].trim(), en: parts[1].trim() };
+  return null;
+};
 
 interface PRDViewProps {
   projectId: string;
