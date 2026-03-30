@@ -553,6 +553,7 @@ const ProjectPage = () => {
       {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
+      {activeTab === "debate" && <DebateView projectId={id!} />}
     </div>
   );
 };
