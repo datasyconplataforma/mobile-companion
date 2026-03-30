@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Terminal, Plus, LogOut, FolderOpen, Loader2, Trash2, Pencil, X, Check, Users } from "lucide-react";
+import { Terminal, Plus, LogOut, FolderOpen, Loader2, Trash2, Pencil, X, Check, Users, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const statusLabels: Record<string, string> = {
@@ -129,13 +129,22 @@ const DashboardPage = () => {
           </div>
           <span className="font-semibold text-sm text-foreground">CodeBuddy</span>
         </div>
-        <button
-          onClick={signOut}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <LogOut size={14} />
-          Sair
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/skills")}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Wrench size={14} />
+            Skills
+          </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <LogOut size={14} />
+            Sair
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">

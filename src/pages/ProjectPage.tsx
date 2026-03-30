@@ -13,7 +13,7 @@ import TaskList from "@/components/project/TaskList";
 import PromptList from "@/components/project/PromptList";
 import LLMSettings from "@/components/project/LLMSettings";
 import DocumentList from "@/components/project/DocumentList";
-import SkillList from "@/components/project/SkillList";
+// SkillList removed - skills are now managed from the centralized /skills page
 import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
@@ -90,13 +90,33 @@ const ProjectPage = () => {
     },
   });
 
+  // Get global skills assigned to this project (or all if no assignments)
   const { data: globalSkills = [] } = useQuery({
-    queryKey: ["global_skills", user?.id],
+    queryKey: ["global_skills_for_project", user?.id, id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("global_skills" as any).select("*").eq("user_id", user!.id).order("created_at", { ascending: true });
+      const { data: allGlobal, error } = await supabase.from("global_skills" as any).select("*").eq("user_id", user!.id);
       if (error) throw error;
-      return data as any[];
+      const allGlobalSkills = allGlobal as any[];
+
+      // Check assignments
+      const { data: assignments } = await supabase
+        .from("skill_project_assignments" as any).select("skill_id").eq("user_id", user!.id).eq("project_id", id!);
+      
+      if (!assignments || assignments.length === 0) {
+        // Check if user has ANY assignments at all
+        const { data: anyAssignments } = await supabase
+          .from("skill_project_assignments" as any).select("id").eq("user_id", user!.id).limit(1);
+        if (!anyAssignments || anyAssignments.length === 0) {
+          // No assignments configured yet - return all global skills
+          return allGlobalSkills;
+        }
+        // Has assignments but none for this project - return empty
+        return [];
+      }
+      
+      const assignedIds = new Set((assignments as any[]).map((a: any) => a.skill_id));
+      return allGlobalSkills.filter((s: any) => assignedIds.has(s.id));
     },
   });
 
@@ -472,12 +492,7 @@ const ProjectPage = () => {
       )}
 
       {activeTab === "prd" && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="shrink-0 px-4 py-3 border-b border-border">
-            <SkillList projectId={id!} githubRepoUrl={project?.github_repo_url} />
-          </div>
-          <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
-        </div>
+        <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
       )}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}

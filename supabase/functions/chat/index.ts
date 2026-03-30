@@ -392,11 +392,10 @@ serve(async (req) => {
     const supportsTools = !llmSettings?.provider || llmSettings?.provider === "lovable" || llmSettings?.provider === "gemini" || llmSettings?.provider === "claude";
 
     // "generate" action: non-streaming with tool calling (or JSON fallback)
+    // Uses DUAL AI DEBATE: AI1 generates → AI2 critiques → AI1 refines
     if (action === "generate") {
       let baseBody: any;
-
-      if (supportsTools) {
-        const generateInstruction = `\n\nINSTRUÇÃO OBRIGATÓRIA: Você DEVE usar as ferramentas save_prd, save_tasks e save_prompts para salvar os documentos do projeto. Baseado em TODA a conversa acima e no contexto do projeto, gere:
+      const generateInstruction = `\n\nINSTRUÇÃO OBRIGATÓRIA: Você DEVE usar as ferramentas save_prd, save_tasks e save_prompts para salvar os documentos do projeto. Baseado em TODA a conversa acima e no contexto do projeto, gere:
 1. O PRD completo em markdown (use save_prd)
 2. Uma lista de tarefas de desenvolvimento (use save_tasks) 
 3. Prompts prontos para usar na Lovable (use save_prompts)
@@ -415,6 +414,8 @@ REGRA DE IDIOMA PARA PRD E PROMPTS: O PRD e os prompts DEVEM ser bilíngues. Esc
 (same content in English)
 
 Para os prompts: cada prompt deve conter o texto em português seguido de "---" e a versão em inglês do mesmo prompt. O título do prompt deve ser em português.`;
+
+      if (supportsTools) {
         baseBody = {
           messages: [
             { role: "system", content: systemPrompt + generateInstruction },
@@ -425,7 +426,6 @@ Para os prompts: cada prompt deve conter o texto em português seguido de "---" 
           tool_choice: "auto",
         };
       } else {
-        // JSON fallback for providers without tool calling support
         const jsonPrompt = systemPrompt + `\n\nAGORA: Baseado na conversa, gere o PRD completo, a lista de tarefas e os prompts para a Lovable.
 
 REGRA DE IDIOMA: O PRD e os prompts devem ser BILÍNGUES (português primeiro, depois inglês separado por ---).
@@ -445,26 +445,122 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
         };
       }
 
-      const requestBody = providerConfig.transformBody(baseBody);
-
-      const response = await fetch(providerConfig.url, {
+      // === STEP 1: AI1 generates initial version ===
+      const requestBody1 = providerConfig.transformBody(baseBody);
+      const response1 = await fetch(providerConfig.url, {
         method: "POST",
         headers: providerConfig.headers,
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(requestBody1),
       });
 
-      if (!response.ok) {
-        const t = await response.text();
-        console.error("AI provider error:", response.status, t);
-        return new Response(JSON.stringify({ error: `Erro do provedor (${response.status})` }), {
+      if (!response1.ok) {
+        const t = await response1.text();
+        console.error("AI1 error:", response1.status, t);
+        return new Response(JSON.stringify({ error: `Erro do provedor (${response1.status})` }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const rawResult = await response.json();
-      console.log("AI generate response:", JSON.stringify(rawResult).slice(0, 2000));
-      
-      // Process tool calls and save to database
+      const rawResult1 = await response1.json();
+      console.log("AI1 initial generation done");
+
+      // Extract AI1's output for review
+      let ai1Content = "";
+      let ai1ToolCalls: any[] = [];
+      if (supportsTools) {
+        const result1 = isClaude ? transformClaudeResponse(rawResult1) : rawResult1;
+        ai1ToolCalls = result1.choices?.[0]?.message?.tool_calls || [];
+        ai1Content = result1.choices?.[0]?.message?.content || "";
+        // Serialize tool call args for review
+        const toolSummary = ai1ToolCalls.map((tc: any) => {
+          try {
+            const args = JSON.parse(tc.function.arguments);
+            if (tc.function.name === "save_prd") return `PRD:\n${(args.prd_content || "").slice(0, 3000)}...`;
+            if (tc.function.name === "save_tasks") return `TASKS:\n${JSON.stringify(args.tasks?.slice(0, 10), null, 1)}`;
+            if (tc.function.name === "save_prompts") return `PROMPTS:\n${JSON.stringify(args.prompts?.slice(0, 5), null, 1)}`;
+          } catch { return ""; }
+          return "";
+        }).join("\n\n");
+        ai1Content = toolSummary + "\n\n" + ai1Content;
+      } else {
+        ai1Content = rawResult1.choices?.[0]?.message?.content || "";
+      }
+
+      // === STEP 2: AI2 critiques (uses Lovable AI as reviewer for independence) ===
+      const reviewerConfig = getProviderConfig(null, LOVABLE_API_KEY); // Always use Lovable AI as reviewer
+      const reviewPrompt = `Você é um REVISOR TÉCNICO SÊNIOR. Analise o PRD, tarefas e prompts gerados abaixo e forneça críticas construtivas.
+
+Avalie:
+1. **Completude do PRD**: Faltam seções? Requisitos ambíguos? User stories claras?
+2. **Qualidade das tarefas**: São granulares o suficiente? Ordem lógica? Faltam tarefas?
+3. **Prompts**: São claros e acionáveis? Cobrem todos os aspectos do projeto?
+4. **Consistência**: PRD, tarefas e prompts estão alinhados entre si?
+5. **Regras de negócio**: Foram respeitadas no PRD e refletidas nas tarefas?
+
+CONTEXTO DO PROJETO:
+${systemPrompt.slice(0, 4000)}
+
+CONTEÚDO GERADO PELA IA1:
+${ai1Content.slice(0, 8000)}
+
+Responda com uma lista objetiva de melhorias necessárias. Seja direto e específico.`;
+
+      const reviewBody = reviewerConfig.transformBody({
+        messages: [
+          { role: "system", content: "Você é um revisor técnico sênior. Seja objetivo e construtivo." },
+          { role: "user", content: reviewPrompt },
+        ],
+      });
+
+      let reviewFeedback = "";
+      try {
+        const response2 = await fetch(reviewerConfig.url, {
+          method: "POST",
+          headers: reviewerConfig.headers,
+          body: JSON.stringify(reviewBody),
+        });
+        if (response2.ok) {
+          const reviewResult = await response2.json();
+          reviewFeedback = reviewResult.choices?.[0]?.message?.content || "";
+          console.log("AI2 review done, feedback length:", reviewFeedback.length);
+        }
+      } catch (e) {
+        console.error("AI2 review error:", e);
+      }
+
+      // === STEP 3: AI1 refines based on feedback (if we got feedback) ===
+      let finalResult = rawResult1;
+      if (reviewFeedback && supportsTools) {
+        const refineBody: any = {
+          messages: [
+            { role: "system", content: systemPrompt + generateInstruction },
+            ...messages,
+            { role: "user", content: "Por favor, gere o PRD, as tarefas e os prompts do projeto agora." },
+            { role: "assistant", content: ai1Content.slice(0, 4000) },
+            { role: "user", content: `Um REVISOR TÉCNICO SÊNIOR analisou seu trabalho e encontrou os seguintes pontos de melhoria:\n\n${reviewFeedback}\n\nPor favor, REFINE e MELHORE o PRD, tarefas e prompts com base nesse feedback. Use as ferramentas para salvar a versão melhorada. SEMPRE chame as 3 ferramentas (save_prd, save_tasks, save_prompts).` },
+          ],
+          tools,
+          tool_choice: "auto",
+        };
+
+        const requestBody3 = providerConfig.transformBody(refineBody);
+        try {
+          const response3 = await fetch(providerConfig.url, {
+            method: "POST",
+            headers: providerConfig.headers,
+            body: JSON.stringify(requestBody3),
+          });
+          if (response3.ok) {
+            finalResult = await response3.json();
+            console.log("AI1 refinement done");
+          }
+        } catch (e) {
+          console.error("AI1 refinement error:", e);
+          // Fall back to initial result
+        }
+      }
+
+      // Process final result and save to database
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
@@ -472,9 +568,12 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
       let contentText = "";
 
       if (supportsTools) {
-        const result = isClaude ? transformClaudeResponse(rawResult) : rawResult;
+        const result = isClaude ? transformClaudeResponse(finalResult) : finalResult;
         const toolCalls = result.choices?.[0]?.message?.tool_calls || [];
         contentText = result.choices?.[0]?.message?.content || "";
+        if (reviewFeedback) {
+          contentText += "\n\n---\n🔍 **Revisão por IA:** O conteúdo foi refinado automaticamente com base em uma revisão técnica independente.";
+        }
         console.log("Tool calls count:", toolCalls.length, "Content length:", contentText.length);
 
         for (const call of toolCalls) {
@@ -485,13 +584,9 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
               saved.prd = true;
             }
             if (call.function.name === "save_tasks" && args.tasks) {
-              // Fetch existing tasks to preserve their status
               const { data: existingTasks } = await supabase
-                .from("project_tasks")
-                .select("title, status")
-                .eq("project_id", projectId);
+                .from("project_tasks").select("title, status").eq("project_id", projectId);
               const statusMap = new Map((existingTasks || []).map((t: any) => [t.title.toLowerCase().trim(), t.status]));
-              
               await supabase.from("project_tasks").delete().eq("project_id", projectId);
               const taskRows = args.tasks.map((t: any, i: number) => ({
                 project_id: projectId, user_id: userId,
@@ -516,25 +611,19 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
           }
         }
       } else {
-        // Parse JSON from response content
-        const rawContent = rawResult.choices?.[0]?.message?.content || "";
+        const rawContent = finalResult.choices?.[0]?.message?.content || "";
         try {
-          // Extract JSON from response (handle markdown code blocks too)
           const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
-
             if (parsed.prd_content) {
               await supabase.from("projects").update({ prd_content: parsed.prd_content, status: "prd_ready" }).eq("id", projectId);
               saved.prd = true;
             }
             if (parsed.tasks?.length) {
               const { data: existingTasks } = await supabase
-                .from("project_tasks")
-                .select("title, status")
-                .eq("project_id", projectId);
+                .from("project_tasks").select("title, status").eq("project_id", projectId);
               const statusMap = new Map((existingTasks || []).map((t: any) => [t.title.toLowerCase().trim(), t.status]));
-              
               await supabase.from("project_tasks").delete().eq("project_id", projectId);
               const taskRows = parsed.tasks.map((t: any, i: number) => ({
                 project_id: projectId, user_id: userId,
