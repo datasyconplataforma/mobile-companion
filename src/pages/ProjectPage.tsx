@@ -90,6 +90,16 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: globalSkills = [] } = useQuery({
+    queryKey: ["global_skills", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("global_skills" as any).select("*").eq("user_id", user!.id).order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   const { data: businessRules } = useQuery({
     queryKey: ["business_rules", id],
     queryFn: async () => {
@@ -123,6 +133,7 @@ const ProjectPage = () => {
     prompts: prompts.map((p) => ({ title: p.title, content: p.prompt_text })),
     documents: documents.filter((d) => d.extracted_text).map((d) => ({ name: d.file_name, content: d.extracted_text })),
     skills: skills.map((s: any) => s.name),
+    globalSkills: globalSkills.map((s: any) => s.name),
     businessRules: businessRules?.content || "",
   });
 
