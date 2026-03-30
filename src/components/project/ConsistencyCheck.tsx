@@ -2,11 +2,12 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, X, ShieldCheck, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { AlertTriangle, Loader2, X, ShieldCheck, ChevronDown, ChevronRight, Clock, Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface ConsistencyCheckProps {
   projectId: string;
+  onSendToChat?: (message: string) => void;
 }
 
 interface DebateData {
