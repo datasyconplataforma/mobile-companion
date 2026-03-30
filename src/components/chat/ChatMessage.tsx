@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CopyButton from "./CopyButton";
+import ChatQuestionOptions, { parseQuestionOptions } from "./ChatQuestionOptions";
 import { Message } from "@/types/chat";
 import { Bot, User, Trash2, EyeOff, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +12,19 @@ interface ChatMessageProps {
   message: Message;
   onDelete?: (id: string) => void;
   onToggleExclude?: (id: string, excluded: boolean) => void;
+  onSendOption?: (text: string) => void;
+  isLastAssistant?: boolean;
+  isLoading?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleExclude, onSendOption, isLastAssistant, isLoading }) => {
   const isUser = message.role === "user";
   const isExcluded = message.excluded;
   const isStreaming = message.id === "streaming";
+
+  // Parse options from assistant messages
+  const { cleanContent, options } = !isUser ? parseQuestionOptions(message.content) : { cleanContent: message.content, options: [] };
+  const showOptions = options.length > 0 && isLastAssistant && !isLoading && onSendOption;
 
   return (
     <div
@@ -108,8 +116,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
                 },
               }}
             >
-              {message.content}
+              {cleanContent}
             </ReactMarkdown>
+            {showOptions && (
+              <ChatQuestionOptions options={options} onSelect={onSendOption!} disabled={isLoading} />
+            )}
           </div>
         )}
       </div>
