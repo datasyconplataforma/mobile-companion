@@ -453,6 +453,7 @@ Responda EXCLUSIVAMENTE com um bloco JSON válido (sem markdown, sem texto antes
         };
       }
 
+      const debateStartTime = Date.now();
       // === STEP 1: AI1 generates initial version ===
       const requestBody1 = providerConfig.transformBody(baseBody);
       const response1 = await fetch(providerConfig.url, {
