@@ -620,6 +620,7 @@ const ProjectPage = () => {
       {activeTab === "docs" && <DocumentList projectId={id!} />}
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
       {activeTab === "debate" && <DebateView projectId={id!} />}
+      {activeTab === "mcp" && <MCPConfig projectId={id!} />}
     </div>
   );
 };
