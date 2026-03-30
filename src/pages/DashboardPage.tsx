@@ -34,12 +34,35 @@ const DashboardPage = () => {
   const { data: projects, isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Own projects
+      const { data: ownProjects, error } = await supabase
         .from("projects")
         .select("*")
+        .eq("user_id", user!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Shared projects
+      const { data: shares } = await supabase
+        .from("project_shares" as any)
+        .select("project_id")
+        .eq("shared_with_user_id", user!.id);
+
+      let sharedProjects: typeof ownProjects = [];
+      if (shares && shares.length > 0) {
+        const sharedIds = (shares as any[]).map((s: any) => s.project_id);
+        const { data: sp } = await supabase
+          .from("projects")
+          .select("*")
+          .in("id", sharedIds)
+          .order("updated_at", { ascending: false });
+        sharedProjects = sp || [];
+      }
+
+      return [
+        ...ownProjects.map((p) => ({ ...p, _shared: false })),
+        ...sharedProjects.map((p) => ({ ...p, _shared: true })),
+      ];
     },
   });
 

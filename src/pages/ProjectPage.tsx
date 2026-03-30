@@ -387,6 +387,7 @@ const ProjectPage = () => {
         <span className="font-semibold text-sm text-foreground truncate flex-1">
           {project?.name || "..."}
         </span>
+        <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
         <ConsistencyCheck projectId={id!} />
         <GitHubConnection
           projectId={id!}
