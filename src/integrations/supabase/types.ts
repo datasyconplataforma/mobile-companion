@@ -54,18 +54,21 @@ export type Database = {
       }
       global_skills: {
         Row: {
+          context_md: string | null
           created_at: string
           id: string
           name: string
           user_id: string
         }
         Insert: {
+          context_md?: string | null
           created_at?: string
           id?: string
           name: string
           user_id: string
         }
         Update: {
+          context_md?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -301,6 +304,7 @@ export type Database = {
       }
       project_skills: {
         Row: {
+          context_md: string | null
           created_at: string
           id: string
           name: string
@@ -308,6 +312,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          context_md?: string | null
           created_at?: string
           id?: string
           name: string
@@ -315,6 +320,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          context_md?: string | null
           created_at?: string
           id?: string
           name?: string
