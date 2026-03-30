@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords } from "lucide-react";
+import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords, RotateCcw } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
@@ -34,6 +34,8 @@ const ProjectPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
 
   const { data: project } = useQuery({
@@ -436,6 +438,32 @@ const ProjectPage = () => {
     }
   };
 
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await Promise.all([
+        supabase.from("chat_messages").delete().eq("project_id", id!),
+        supabase.from("project_tasks").delete().eq("project_id", id!),
+        supabase.from("project_prompts").delete().eq("project_id", id!),
+        supabase.from("project_debates").delete().eq("project_id", id!),
+        supabase.from("projects").update({ prd_content: null }).eq("id", id!),
+      ]);
+      queryClient.invalidateQueries({ queryKey: ["messages", id] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", id] });
+      queryClient.invalidateQueries({ queryKey: ["prompts", id] });
+      queryClient.invalidateQueries({ queryKey: ["debates", id] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+      setActiveTab("chat");
+      toast({ title: "Projeto resetado", description: "Chat, PRD, tarefas, prompts e debates foram limpos." });
+    } catch (err) {
+      console.error("Reset error:", err);
+      toast({ title: "Erro", description: "Falha ao resetar o projeto.", variant: "destructive" });
+    } finally {
+      setIsResetting(false);
+      setShowResetConfirm(false);
+    }
+  };
+
   const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
     { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "rules", icon: Scale, label: "Regras" },
@@ -478,11 +506,34 @@ const ProjectPage = () => {
         <ConsistencyCheck projectId={id!} />
         <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
         <LLMSettings projectId={id!} />
-        <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
-          {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-          Gerar PRD
-        </button>
+        <div className="relative flex items-center gap-1.5">
+          <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
+            {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+            Gerar PRD
+          </button>
+          <button onClick={() => setShowResetConfirm(true)} disabled={isResetting}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-40 hover:bg-destructive/90 transition-all"
+            title="Resetar projeto">
+            {isResetting ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+          </button>
+          {showResetConfirm && (
+            <div className="absolute top-full right-0 mt-2 z-50 w-72 p-4 rounded-xl bg-card border border-border shadow-xl">
+              <p className="text-sm font-medium text-foreground mb-1">Resetar projeto?</p>
+              <p className="text-xs text-muted-foreground mb-3">Isso vai apagar: chat, PRD, tarefas, prompts e debates. Essa ação não pode ser desfeita.</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowResetConfirm(false)} className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs">
+                  Cancelar
+                </button>
+                <button onClick={handleReset} disabled={isResetting}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-50">
+                  {isResetting && <Loader2 size={12} className="animate-spin" />}
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="shrink-0 flex border-b border-border bg-card/50">
