@@ -49,7 +49,7 @@ const MCPConfig = ({ projectId }: { projectId: string }) => {
       className="absolute top-2 right-2 p-1.5 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
       title="Copiar"
     >
-      {copied === id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+      {copied === id ? <Check size={14} className="text-primary" /> : <Copy size={14} />}
     </button>
   );
 
