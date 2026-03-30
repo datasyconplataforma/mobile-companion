@@ -1,48 +1,72 @@
 
 
-## Plano: Separar versões PT e EN lado a lado com botões de copiar independentes
+## Plano: Criar MCP Server como Edge Function
 
-### Problema atual
-O prompt bilíngue está em uma única caixa de texto (PT + `---` + EN misturados). Dificulta copiar apenas uma versão.
+### Contexto
 
-### Solução
-Modificar `PromptList.tsx` para:
+O MCP Server exporia os dados do CodeBuddy (projetos, PRD, tarefas, prompts, skills, regras de negócio) via protocolo **Streamable HTTP**. Qualquer cliente MCP compatível pode se conectar:
 
-1. **Detectar e separar** o conteúdo bilíngue pelo separador `---` (ou `\n---\n`)
-2. **Renderizar lado a lado** (grid 2 colunas) com labels "🇧🇷 PT" e "🇺🇸 EN"
-3. **Botão de copiar independente** em cada versão
-4. Se não houver separador `---`, exibir normalmente como hoje (fallback)
+- **Claude Code** — suporta MCP Streamable HTTP nativamente
+- **Claude Desktop** — suporta MCP (via config JSON)
+- **Cursor** — suporta MCP servers
+- **Lovable** — suporta MCP servers
+- **MCP Inspector** — para testes
 
-### Layout visual
+### Como funciona a conexão
 
 ```text
-┌─────────────────────────────────────────────┐
-│ ① Passo 1 - Título         [✏️][🗑️]       │
-│ ┌──────────────────┐ ┌──────────────────┐   │
-│ │ 🇧🇷 PT      [📋] │ │ 🇺🇸 EN      [📋] │   │
-│ │                  │ │                  │   │
-│ │ Texto em PT...   │ │ Text in EN...    │   │
-│ │                  │ │                  │   │
-│ └──────────────────┘ └──────────────────┘   │
-└─────────────────────────────────────────────┘
+Claude Code / Claude Desktop / Cursor
+        │
+        │  HTTP POST (JSON-RPC)
+        ▼
+Edge Function: mcp-server
+        │
+        │  Supabase queries (com auth JWT)
+        ▼
+    Database (projetos, PRD, tarefas...)
 ```
 
-### Arquivo a editar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/components/project/PromptList.tsx` | Função helper `splitBilingual(text)` que retorna `{pt, en}`. Renderizar grid 2-col com botões de copiar separados por idioma. Remover botão de copiar geral do header quando bilíngue. |
-
-### Detalhes técnicos
-
-```typescript
-const splitBilingual = (text: string) => {
-  const parts = text.split(/\n---\n/);
-  if (parts.length >= 2) return { pt: parts[0].trim(), en: parts[1].trim() };
-  return null; // fallback: não é bilíngue
-};
+O usuário configura no cliente MCP algo como:
+```json
+{
+  "mcpServers": {
+    "codebuddy": {
+      "url": "https://gzhnbgkzofkttdndoxkj.supabase.co/functions/v1/mcp-server",
+      "headers": {
+        "Authorization": "Bearer <token_do_usuario>"
+      }
+    }
+  }
+}
 ```
 
-- `copiedId` passa a usar sufixo `-pt` / `-en` para controlar feedback independente
-- Cada coluna tem seu próprio botão Copy com estado isolado
+### Implementação
+
+#### 1. Criar `supabase/functions/mcp-server/deno.json`
+Import map com `mcp-lite@^0.10.0` e Hono.
+
+#### 2. Criar `supabase/functions/mcp-server/index.ts`
+Definir 6 tools MCP (read-only):
+
+| Tool | Descrição |
+|------|-----------|
+| `list_projects` | Lista projetos do usuário |
+| `get_project_prd` | Retorna PRD de um projeto |
+| `get_project_tasks` | Lista tarefas do projeto |
+| `get_project_prompts` | Retorna prompts gerados |
+| `get_project_skills` | Retorna skills do projeto |
+| `get_business_rules` | Retorna regras de negócio |
+
+Cada tool autentica via JWT do header Authorization, cria um Supabase client scoped ao usuário, e faz queries nas tabelas existentes.
+
+#### 3. Adicionar página de configuração na UI
+Nova seção em `ProjectPage` ou página dedicada mostrando:
+- URL do MCP Server
+- Instruções de configuração para Claude Code, Claude Desktop e Cursor
+- Botão para copiar o JSON de configuração
+
+### Segurança
+- Autenticação via JWT em cada chamada (getClaims)
+- RLS do banco garante acesso apenas aos dados do usuário
+- Read-only (sem escrita via MCP inicialmente)
 
