@@ -369,7 +369,11 @@ serve(async (req) => {
       llmSettings = data;
     }
 
-    const providerConfig = getProviderConfig(llmSettings, LOVABLE_API_KEY);
+    // Fallback to Lovable AI if provider requires API key but none is set
+    const effectiveSettings = (llmSettings?.provider && llmSettings.provider !== "lovable" && !llmSettings.api_key)
+      ? null
+      : llmSettings;
+    const providerConfig = getProviderConfig(effectiveSettings, LOVABLE_API_KEY);
     const systemPrompt = buildSystemPrompt(projectContext || {});
     const isClaude = llmSettings?.provider === "claude";
     const supportsTools = !llmSettings?.provider || llmSettings?.provider === "lovable" || llmSettings?.provider === "gemini" || llmSettings?.provider === "claude";
