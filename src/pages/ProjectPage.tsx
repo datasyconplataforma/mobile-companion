@@ -90,6 +90,16 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: globalSkills = [] } = useQuery({
+    queryKey: ["global_skills", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("global_skills" as any).select("*").eq("user_id", user!.id).order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   const { data: businessRules } = useQuery({
     queryKey: ["business_rules", id],
     queryFn: async () => {
