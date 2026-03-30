@@ -474,7 +474,7 @@ const ProjectPage = () => {
       {activeTab === "prd" && (
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="shrink-0 px-4 py-3 border-b border-border">
-            <SkillList projectId={id!} />
+            <SkillList projectId={id!} githubRepoUrl={project?.github_repo_url} />
           </div>
           <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
         </div>

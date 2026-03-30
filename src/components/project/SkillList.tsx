@@ -6,6 +6,7 @@ import { X, Plus, Loader2, Wrench, Globe, FolderOpen } from "lucide-react";
 
 interface SkillListProps {
   projectId: string;
+  githubRepoUrl?: string | null;
 }
 
 const SUGGESTED_SKILLS = [
