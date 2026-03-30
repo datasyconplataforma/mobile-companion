@@ -176,6 +176,26 @@ const ProjectPage = () => {
     return { name: s.name, context: fullContext };
   };
 
+  const buildDebateSummary = (debate: any): string => {
+    if (!debate) return "";
+    const providerLabel = (p: string) => ({ lovable: "Lovable AI", gemini: "Google Gemini", openrouter: "OpenRouter", claude: "Claude", ollama: "Ollama" }[p] || p);
+    let summary = "\n\n---\n⚖️ **Debate entre IAs**\n";
+    if (debate.happened) {
+      summary += `| Etapa | Status |\n|---|---|\n`;
+      for (const s of debate.steps) {
+        summary += `| ${s.label} | ${s.done ? "✅" : "⏭️ Pulado"} |\n`;
+      }
+      summary += `\n- **IA Principal:** ${providerLabel(debate.mainProvider)}${debate.mainModel ? ` (${debate.mainModel})` : ""}\n`;
+      summary += `- **IA Revisora:** ${providerLabel(debate.reviewerProvider)}${debate.reviewerMode === "same" ? " (mesma IA)" : " (independente)"}\n`;
+      if (debate.feedbackPreview) {
+        summary += `\n<details><summary>📋 Prévia do feedback da revisora</summary>\n\n${debate.feedbackPreview}\n\n</details>`;
+      }
+    } else {
+      summary += "⏭️ O debate não ocorreu nesta geração (sem feedback da revisora).";
+    }
+    return summary;
+  };
+
   const buildContext = () => ({
     prd: project?.prd_content || "",
     tasks: tasks.map((t) => ({ title: t.title, completed: t.status === "done" })),
@@ -297,6 +317,7 @@ const ProjectPage = () => {
           replyContent = result.content || "Preciso de mais detalhes para gerar. Continue descrevendo seu projeto!";
         }
         if (result.content && savedItems.length > 0) replyContent += "\n\n" + result.content;
+        replyContent += buildDebateSummary(result.debate);
 
         await saveMessage.mutateAsync({ role: "assistant", content: replyContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
@@ -397,8 +418,9 @@ const ProjectPage = () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["prompts", id] });
       if (savedItems.length > 0) {
+        const debateInfo = buildDebateSummary(result.debate);
         toast({ title: "Gerado com sucesso! ✨", description: `${savedItems.join(", ")} salvos nas abas do projeto.` });
-        await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}` });
+        await saveMessage.mutateAsync({ role: "assistant", content: `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!${result.content ? "\n\n" + result.content : ""}${debateInfo}` });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
       } else {
         toast({ title: "Aviso", description: "A IA não conseguiu gerar os documentos. Tente dar mais detalhes no chat.", variant: "destructive" });
