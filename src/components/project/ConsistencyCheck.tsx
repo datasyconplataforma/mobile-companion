@@ -104,6 +104,7 @@ const ConsistencyCheck = ({ projectId, onSendToChat }: ConsistencyCheckProps) =>
     setIsAnalyzing(true);
     setResult(null);
     setDebate(null);
+    setFixPrompts([]);
     setCurrentStep(1);
     setShowPanel(true);
     setExpandedSections({ final: true });
