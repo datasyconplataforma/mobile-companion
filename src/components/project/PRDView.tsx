@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
-import { FileText, Pencil, Eye, Save, Loader2, RefreshCw } from "lucide-react";
+import { FileText, Pencil, Eye, Save, Loader2, RefreshCw, Copy, Check } from "lucide-react";
+
+const splitBilingual = (text: string) => {
+  const parts = text.split(/\n---\n/);
+  if (parts.length >= 2) return { pt: parts[0].trim(), en: parts[1].trim() };
+  return null;
+};
 
 interface PRDViewProps {
   projectId: string;
@@ -15,6 +21,13 @@ const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDVie
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(prdContent || "");
+  const [copiedLang, setCopiedLang] = useState<string | null>(null);
+
+  const handleCopy = (text: string, lang: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedLang(lang);
+    setTimeout(() => setCopiedLang(null), 1500);
+  };
 
   const savePrd = useMutation({
     mutationFn: async (content: string) => {
@@ -107,23 +120,59 @@ const PRDView = ({ projectId, prdContent, onRegenerate, isRegenerating }: PRDVie
           placeholder="Escreva seu PRD em markdown..."
         />
       ) : (
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-          <div className="max-w-2xl mx-auto prose-chat">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="text-lg font-bold text-foreground mt-4 mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-base font-bold text-foreground mt-3 mb-1">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-sm font-bold text-foreground mt-2 mb-1">{children}</h3>,
-                p: ({ children }) => <p className="text-sm text-foreground mb-2">{children}</p>,
-                ul: ({ children }) => <ul className="list-disc pl-4 mb-2 text-sm text-foreground space-y-1">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 text-sm text-foreground space-y-1">{children}</ol>,
-                strong: ({ children }) => <strong className="font-semibold text-primary">{children}</strong>,
-              }}
-            >
-              {prdContent || ""}
-            </ReactMarkdown>
-          </div>
-        </div>
+        (() => {
+          const bilingual = splitBilingual(prdContent || "");
+          const mdComponents = {
+            h1: ({ children }: any) => <h1 className="text-lg font-bold text-foreground mt-4 mb-2">{children}</h1>,
+            h2: ({ children }: any) => <h2 className="text-base font-bold text-foreground mt-3 mb-1">{children}</h2>,
+            h3: ({ children }: any) => <h3 className="text-sm font-bold text-foreground mt-2 mb-1">{children}</h3>,
+            p: ({ children }: any) => <p className="text-sm text-foreground mb-2">{children}</p>,
+            ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2 text-sm text-foreground space-y-1">{children}</ul>,
+            ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2 text-sm text-foreground space-y-1">{children}</ol>,
+            strong: ({ children }: any) => <strong className="font-semibold text-primary">{children}</strong>,
+          };
+
+          if (bilingual) {
+            return (
+              <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+                <div className="grid grid-cols-2 gap-3 h-full">
+                  {/* PT */}
+                  <div className="rounded-lg border border-border bg-secondary/30 p-3 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇧🇷 PT</span>
+                      <button onClick={() => handleCopy(bilingual.pt, "pt")} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                        {copiedLang === "pt" ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                    <div className="prose-chat">
+                      <ReactMarkdown components={mdComponents}>{bilingual.pt}</ReactMarkdown>
+                    </div>
+                  </div>
+                  {/* EN */}
+                  <div className="rounded-lg border border-border bg-secondary/30 p-3 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">🇺🇸 EN</span>
+                      <button onClick={() => handleCopy(bilingual.en, "en")} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+                        {copiedLang === "en" ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                    <div className="prose-chat">
+                      <ReactMarkdown components={mdComponents}>{bilingual.en}</ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+              <div className="max-w-2xl mx-auto prose-chat">
+                <ReactMarkdown components={mdComponents}>{prdContent || ""}</ReactMarkdown>
+              </div>
+            </div>
+          );
+        })()
       )}
     </div>
   );
