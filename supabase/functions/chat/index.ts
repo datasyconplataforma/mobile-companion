@@ -106,6 +106,19 @@ function buildSystemPrompt(context: { prd?: string; tasks?: any[]; prompts?: any
     prompt += `\n\n---\n## PROMPTS LOVABLE DO PROJETO:\n${promptList}`;
   }
 
+  if (context.debates && context.debates.length > 0) {
+    const debateList = context.debates
+      .map((d: any, i: number) => `### Revisão ${i + 1}\n**Feedback do Revisor:**\n${d.reviewFeedback}${d.finalOutput ? `\n**Resultado Final:**\n${d.finalOutput}` : ""}`)
+      .join("\n\n");
+    prompt += `\n\n---\n## RELATÓRIOS DE REVISÃO / CONSISTÊNCIA:
+IMPORTANTE: Estes são relatórios de revisão anteriores que identificaram problemas, lacunas ou inconsistências no projeto. Ao gerar ou atualizar o PRD, tarefas e prompts, você DEVE:
+- Corrigir os problemas apontados nos relatórios
+- Incorporar as sugestões de melhoria
+- Garantir que as lacunas identificadas sejam endereçadas
+
+${debateList}`;
+  }
+
   if (context.documents && context.documents.length > 0) {
     const docList = context.documents
       .map((d: any, i: number) => `### Documento ${i + 1}: ${d.name}\n${d.content}`)
