@@ -72,7 +72,7 @@ const DebateCard = ({ debate }: { debate: any }) => {
       <div className="px-4 py-3 border-b border-border bg-card/80 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Swords size={16} className="text-primary" />
-          <span className="text-sm font-semibold text-foreground">Debate #{debate.id.slice(0, 6)}</span>
+          <span className="text-sm font-semibold text-foreground">Debate #{debate.id?.slice(0, 6) ?? "—"}</span>
           {debate.debate_happened ? (
             <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-400 border-0">
               <CheckCircle2 size={10} className="mr-0.5" /> Completo
