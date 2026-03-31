@@ -217,6 +217,7 @@ const ProjectPage = () => {
     skills: skills.map(enrichSkill),
     globalSkills: globalSkills.map(enrichSkill),
     businessRules: businessRules?.content || "",
+    debates: debates.filter((d) => d.review_feedback).map((d) => ({ reviewFeedback: d.review_feedback, finalOutput: d.final_output })),
   });
 
   const handleUploadFile = async (file: File): Promise<ChatAttachment | null> => {
