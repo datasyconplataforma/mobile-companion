@@ -77,6 +77,15 @@ const ProjectPage = () => {
     },
   });
 
+  const { data: debates = [] } = useQuery({
+    queryKey: ["debates", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("project_debates").select("review_feedback, final_output, debate_happened").eq("project_id", id!).order("created_at", { ascending: false }).limit(5);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: documents = [] } = useQuery({
     queryKey: ["documents", id],
     queryFn: async () => {
