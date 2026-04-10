@@ -28,7 +28,7 @@ import ProjectObjective from "@/components/project/ProjectObjective";
 import ProjectTimeline from "@/components/project/ProjectTimeline";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "objective" | "chat" | "debate" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "mcp" | "timeline";
+type Tab = "chat" | "prd" | "tasks" | "prompts" | "rules" | "docs" | "skills" | "debate" | "timeline" | "mcp";
 
 const statusOptions = [
   { value: "planning", label: "Planejando", color: "bg-yellow-500/20 text-yellow-400" },
@@ -41,26 +41,26 @@ const tabGroups = [
   {
     label: "Configuração",
     tabs: [
-      { key: "rules" as Tab, icon: Scale, label: "Regras" },
+      { key: "rules" as Tab, icon: Gavel, label: "Regras" },
       { key: "skills" as Tab, icon: Wrench, label: "Skills" },
       { key: "docs" as Tab, icon: Paperclip, label: "Docs" },
+      { key: "mcp" as Tab, icon: Plug, label: "MCP" },
     ],
   },
   {
-    label: "Etapas do Projeto",
+    label: "Planejamento",
     tabs: [
-      { key: "objective" as Tab, icon: Target, label: "01·Objetivo" },
-      { key: "chat" as Tab, icon: MessageSquare, label: "02·Chat" },
-      { key: "debate" as Tab, icon: Swords, label: "03·Debate" },
-      { key: "prd" as Tab, icon: FileText, label: "04·PRD" },
+      { key: "chat" as Tab, icon: MessageSquare, label: "01·Chat" },
+      { key: "debate" as Tab, icon: BrainCircuit, label: "02·Debate" },
+      { key: "prd" as Tab, icon: ScrollText, label: "03·PRD" },
     ],
   },
   {
     label: "Execução",
     tabs: [
-      { key: "tasks" as Tab, icon: CheckSquare, label: "Tarefas" },
-      { key: "prompts" as Tab, icon: Zap, label: "Prompts" },
-      { key: "timeline" as Tab, icon: Calendar, label: "Timeline" },
+      { key: "tasks" as Tab, icon: CheckSquare, label: "04·Tarefas" },
+      { key: "prompts" as Tab, icon: Code2, label: "05·Prompts" },
+      { key: "timeline" as Tab, icon: History, label: "06·Timeline" },
     ],
   },
 ];
@@ -598,7 +598,7 @@ const ProjectPage = () => {
             <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
             <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
             <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
-            <LLMSettings projectId={id!} />
+            <LLMSettings />
             <div className="relative flex items-center gap-1">
               <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
@@ -702,7 +702,6 @@ const ProjectPage = () => {
       {activeTab === "prd" && (
         <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
       )}
-      {activeTab === "objective" && <ProjectObjective projectId={id!} description={project?.description} />}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
       {activeTab === "rules" && <BusinessRules projectId={id!} />}

@@ -35,8 +35,8 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -109,9 +109,9 @@ const DashboardPage = () => {
   });
 
   const createProject = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, description }: { name: string; description: string }) => {
       const { data, error } = await supabase
-        .from("projects").insert({ name, user_id: user!.id }).select().single();
+        .from("projects").insert({ name, description, user_id: user!.id }).select().single();
       if (error) throw error;
       return data;
     },
@@ -119,6 +119,7 @@ const DashboardPage = () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setShowNew(false);
       setNewName("");
+      setNewDescription("");
       navigate(`/project/${data.id}`);
     },
     onError: (err: Error) => {
@@ -151,7 +152,12 @@ const DashboardPage = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newName.trim()) createProject.mutate(newName.trim());
+    if (newName.trim()) {
+      createProject.mutate({ 
+        name: newName.trim(), 
+        description: newDescription.trim() 
+      });
+    }
   };
 
   const handleRename = (id: string) => {
@@ -227,14 +233,31 @@ const DashboardPage = () => {
           )}
 
           {showNew && (
-            <form onSubmit={handleCreate} className="mb-4 flex gap-2">
-              <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)}
-                placeholder="Nome do projeto..."
-                className="flex-1 px-3 py-2 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-              <button type="submit" disabled={createProject.isPending}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50">Criar</button>
-              <button type="button" onClick={() => { setShowNew(false); setNewName(""); }}
-                className="px-3 py-2 rounded-xl bg-secondary text-muted-foreground text-sm">✕</button>
+            <form onSubmit={handleCreate} className="mb-6 p-4 rounded-xl bg-card border border-primary/20 shadow-glow flex flex-col gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Nome do Projeto</label>
+                <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Ex: App de Delivery"
+                  className="w-full px-3 py-2 rounded-lg bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring border border-border" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Objetivo / Descrição</label>
+                <textarea 
+                  value={newDescription} 
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="O que este app faz? Qual o problema que ele resolve?"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg bg-secondary text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring border border-border resize-none scrollbar-thin" />
+              </div>
+              <div className="flex gap-2 justify-end mt-1">
+                <button type="button" onClick={() => { setShowNew(false); setNewName(""); setNewDescription(""); }}
+                  className="px-4 py-2 rounded-lg bg-secondary text-muted-foreground text-sm hover:text-foreground transition-colors">Cancelar</button>
+                <button type="submit" disabled={createProject.isPending || !newName.trim()}
+                  className="px-6 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 hover:shadow-glow transition-all flex items-center gap-2">
+                  {createProject.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                  Criar Projeto
+                </button>
+              </div>
             </form>
           )}
 

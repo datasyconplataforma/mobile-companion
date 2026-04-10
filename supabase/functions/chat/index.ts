@@ -390,12 +390,23 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Load LLM settings for this project
-    let llmSettings: any = null;
-    if (projectId) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const sbAdmin = createClient(supabaseUrl, supabaseKey);
+    // Load LLM settings - GLOBAL for the whole system
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sbAdmin = createClient(supabaseUrl, supabaseKey);
+    
+    const GLOBAL_PROJECT_ID = "00000000-0000-0000-0000-000000000000";
+    
+    // First try global settings, then fallback to project-specific (if any exist for backward compatibility)
+    const { data: globalSettings } = await sbAdmin
+      .from("project_llm_settings")
+      .select("*")
+      .eq("project_id", GLOBAL_PROJECT_ID)
+      .maybeSingle();
+      
+    llmSettings = globalSettings;
+
+    if (!llmSettings && projectId) {
       const { data } = await sbAdmin
         .from("project_llm_settings")
         .select("*")

@@ -55,11 +55,13 @@ const PROVIDERS = [
   { value: "ollama", label: "Ollama (local + cloud)", needsKey: false, needsUrl: true, defaultModel: "llama3.2", placeholder: "" },
 ];
 
+const GLOBAL_PROJECT_ID = "00000000-0000-0000-0000-000000000000";
+
 interface LLMSettingsProps {
-  projectId: string;
+  projectId?: string; // Optional, defaults to global
 }
 
-const LLMSettings = ({ projectId }: LLMSettingsProps) => {
+const LLMSettings = ({ projectId = GLOBAL_PROJECT_ID }: LLMSettingsProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -83,7 +85,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
     const { data } = await supabase
       .from("project_llm_settings")
       .select("*")
-      .eq("project_id", projectId)
+      .eq("project_id", GLOBAL_PROJECT_ID)
       .maybeSingle();
     if (data) {
       setProvider((data as any).provider || "lovable");
@@ -118,7 +120,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
     setSaving(true);
     try {
       const payload = {
-        project_id: projectId,
+        project_id: GLOBAL_PROJECT_ID,
         user_id: user.id,
         provider,
         api_key: apiKey || null,
@@ -130,7 +132,7 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
       const { data: existing } = await supabase
         .from("project_llm_settings")
         .select("id")
-        .eq("project_id", projectId)
+        .eq("project_id", GLOBAL_PROJECT_ID)
         .maybeSingle();
 
       if (existing) {
@@ -167,9 +169,9 @@ const LLMSettings = ({ projectId }: LLMSettingsProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings size={18} /> Configurar IA
+            <Settings size={18} /> IA do Sistema
           </DialogTitle>
-          <DialogDescription>Escolha o provedor e modelo de IA para este projeto.</DialogDescription>
+          <DialogDescription>Configurações globais de IA para todos os projetos.</DialogDescription>
         </DialogHeader>
 
         {loading ? (

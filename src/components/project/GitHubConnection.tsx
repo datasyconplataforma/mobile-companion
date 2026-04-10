@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Github, Loader2, Link2, Unlink, Search, FileCode, AlertTriangle, CheckCircle2, Eye, EyeOff, KeyRound } from "lucide-react";
+import { Github, Loader2, Link2, Unlink, Search, FileCode, AlertTriangle, CheckCircle2, Eye, EyeOff, KeyRound, ShieldCheck, ClipboardCheck } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -145,18 +145,18 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
       <DialogTrigger asChild>
         <button
           className={`p-1.5 transition-colors ${isConnected ? "text-emerald-400 hover:text-emerald-300" : "text-muted-foreground hover:text-foreground"}`}
-          title={isConnected ? `GitHub: ${parsed?.owner}/${parsed?.repo}` : "Conectar GitHub"}
+          title={isConnected ? `Auditoria: ${parsed?.owner}/${parsed?.repo}` : "Auditoria de Implementação (Git)"}
         >
-          <Github size={16} />
+          <ShieldCheck size={16} />
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Github size={18} /> Repositório GitHub
+            <ClipboardCheck size={18} className="text-emerald-400" /> Auditoria de Implementação
           </DialogTitle>
           <DialogDescription>
-            Conecte um repositório para confrontar o código com o projeto.
+            Conecte um repositório para confrontar o código (PR) com os requisitos do projeto.
           </DialogDescription>
         </DialogHeader>
 
@@ -228,7 +228,7 @@ const GitHubConnection = ({ projectId, githubRepoUrl, onRepoUpdated }: GitHubCon
                 </Button>
                 <Button onClick={handleAnalyze} disabled={analyzing} size="sm" className="flex-1">
                   {analyzing ? <Loader2 size={14} className="animate-spin mr-1" /> : <Search size={14} className="mr-1" />}
-                  Analisar vs Projeto
+                  Audit de Implementação (PR vs Código)
                 </Button>
               </div>
             </div>

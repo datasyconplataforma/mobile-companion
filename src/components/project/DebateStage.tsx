@@ -81,8 +81,8 @@ const DebateStage = ({ projectId, onPRDGenerated }: DebateStageProps) => {
   const handleStartDebate = async () => {
     if (messages.length < 4) {
       toast({
-        title: "Contexto insuficiente",
-        description: "Converse mais na Etapa 02 (Alimentação) antes de iniciar o debate. São necessárias pelo menos 4 mensagens.",
+        title: "Conversa insuficiente",
+        description: "Você precisa interagir mais na Etapa 01 (Chat) antes de iniciar o debate.",
         variant: "destructive",
       });
       return;

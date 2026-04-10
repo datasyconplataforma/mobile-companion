@@ -18,15 +18,15 @@ interface TimelineEvent {
   description?: string;
   icon: React.ReactNode;
   color: string;
-  phase: "config" | "feeding" | "debate" | "prd" | "execution";
+  phase: Phase;
 }
 
-const phaseLabels: Record<string, string> = {
-  config: "Configuração",
-  feeding: "Alimentação",
-  debate: "Debate",
-  prd: "PRD",
-  execution: "Execução",
+const phaseLabels: Record<Phase, string> = {
+  config: "0·Config",
+  feeding: "1·Chat",
+  debate: "2·Análise",
+  prd: "3·Escopo",
+  execution: "4·Execução",
 };
 
 const phaseColors: Record<string, string> = {
