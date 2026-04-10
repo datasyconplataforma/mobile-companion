@@ -3,7 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip, Wrench, Scale, Swords, RotateCcw, Plug } from "lucide-react";
+import {
+  ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip,
+  Wrench, Scale, Swords, RotateCcw, Plug, Pencil, Check, X,
+} from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";
@@ -25,6 +28,40 @@ import { ChatAttachment } from "@/types/chat";
 
 type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate" | "mcp";
 
+const statusOptions = [
+  { value: "planning", label: "Planejando", color: "bg-yellow-500/20 text-yellow-400" },
+  { value: "prd_ready", label: "PRD Pronto", color: "bg-cyan-500/20 text-cyan-400" },
+  { value: "building", label: "Construindo", color: "bg-primary/20 text-primary" },
+  { value: "done", label: "Concluído", color: "bg-green-500/20 text-green-400" },
+];
+
+const tabGroups = [
+  {
+    label: "Planejamento",
+    tabs: [
+      { key: "chat" as Tab, icon: MessageSquare, label: "Chat" },
+      { key: "rules" as Tab, icon: Scale, label: "Regras" },
+      { key: "prd" as Tab, icon: FileText, label: "PRD" },
+    ],
+  },
+  {
+    label: "Execução",
+    tabs: [
+      { key: "tasks" as Tab, icon: CheckSquare, label: "Tarefas" },
+      { key: "prompts" as Tab, icon: Zap, label: "Prompts" },
+      { key: "docs" as Tab, icon: Paperclip, label: "Docs" },
+    ],
+  },
+  {
+    label: "Configuração",
+    tabs: [
+      { key: "skills" as Tab, icon: Wrench, label: "Skills" },
+      { key: "debate" as Tab, icon: Swords, label: "Debate" },
+      { key: "mcp" as Tab, icon: Plug, label: "MCP" },
+    ],
+  },
+];
+
 const ProjectPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,6 +75,9 @@ const ProjectPage = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState("");
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   const { data: project } = useQuery({
     queryKey: ["project", id],
@@ -104,7 +144,6 @@ const ProjectPage = () => {
     },
   });
 
-  // Get global skills assigned to this project (or all if no assignments)
   const { data: globalSkills = [] } = useQuery({
     queryKey: ["global_skills_for_project", user?.id, id],
     enabled: !!user,
@@ -112,23 +151,14 @@ const ProjectPage = () => {
       const { data: allGlobal, error } = await supabase.from("global_skills" as any).select("*").eq("user_id", user!.id);
       if (error) throw error;
       const allGlobalSkills = allGlobal as any[];
-
-      // Check assignments
       const { data: assignments } = await supabase
         .from("skill_project_assignments" as any).select("skill_id").eq("user_id", user!.id).eq("project_id", id!);
-      
       if (!assignments || assignments.length === 0) {
-        // Check if user has ANY assignments at all
         const { data: anyAssignments } = await supabase
           .from("skill_project_assignments" as any).select("id").eq("user_id", user!.id).limit(1);
-        if (!anyAssignments || anyAssignments.length === 0) {
-          // No assignments configured yet - return all global skills
-          return allGlobalSkills;
-        }
-        // Has assignments but none for this project - return empty
+        if (!anyAssignments || anyAssignments.length === 0) return allGlobalSkills;
         return [];
       }
-      
       const assignedIds = new Set((assignments as any[]).map((a: any) => a.skill_id));
       return allGlobalSkills.filter((s: any) => assignedIds.has(s.id));
     },
@@ -143,21 +173,15 @@ const ProjectPage = () => {
     },
   });
 
-  // Fetch skill attachments for context enrichment
   const { data: skillAttachments = [] } = useQuery({
     queryKey: ["skill_attachments_for_project", id, user?.id],
     enabled: !!user && (skills.length > 0 || globalSkills.length > 0),
     queryFn: async () => {
-      const allSkillIds = [
-        ...skills.map((s: any) => s.id),
-        ...globalSkills.map((s: any) => s.id),
-      ];
+      const allSkillIds = [...skills.map((s: any) => s.id), ...globalSkills.map((s: any) => s.id)];
       if (allSkillIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("skill_attachments" as any)
-        .select("skill_id, file_name, extracted_text")
-        .in("skill_id", allSkillIds)
-        .eq("user_id", user!.id);
+        .from("skill_attachments" as any).select("skill_id, file_name, extracted_text")
+        .in("skill_id", allSkillIds).eq("user_id", user!.id);
       if (error) throw error;
       return data as any[];
     },
@@ -174,6 +198,14 @@ const ProjectPage = () => {
     },
   });
 
+  const updateProject = useMutation({
+    mutationFn: async (updates: { description?: string; status?: string }) => {
+      const { error } = await supabase.from("projects").update(updates).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project", id] }),
+  });
+
   const isGenerateRequest = (text: string): boolean => {
     const lower = text.toLowerCase();
     const keywords = ["gere", "gerar", "crie", "criar", "monte", "montar", "atualize", "atualizar", "faça", "fazer"];
@@ -181,7 +213,6 @@ const ProjectPage = () => {
     return keywords.some((k) => lower.includes(k)) && targets.some((t) => lower.includes(t));
   };
 
-  // Helper to enrich skill with attachment text
   const enrichSkill = (s: any) => {
     const atts = skillAttachments.filter((a: any) => a.skill_id === s.id && a.extracted_text);
     const attachmentText = atts.map((a: any) => `### Anexo: ${a.file_name}\n${a.extracted_text}`).join("\n\n");
@@ -225,7 +256,6 @@ const ProjectPage = () => {
       const isImage = file.type.startsWith("image/");
       const ext = file.name.split(".").pop() || "bin";
       const path = `${user!.id}/${id}/${crypto.randomUUID()}.${ext}`;
-
       const { error: uploadError } = await supabase.storage.from("project-documents").upload(path, file);
       if (uploadError) throw uploadError;
 
@@ -233,22 +263,16 @@ const ProjectPage = () => {
         const { data: urlData } = supabase.storage.from("project-documents").getPublicUrl(path);
         return { type: "image", name: file.name, url: urlData.publicUrl };
       } else {
-        // Text-based: extract content
         let extractedText: string | null = null;
         const textTypes = ["text/plain", "text/markdown", "text/csv", "application/json"];
         if (textTypes.includes(file.type) || file.name.endsWith(".md") || file.name.endsWith(".txt")) {
           extractedText = await file.text();
         }
-
-        // Also save to project_documents for RAG
         await supabase.from("project_documents").insert({
-          project_id: id!, user_id: user!.id,
-          file_name: file.name, file_path: path,
-          file_type: file.type || "application/octet-stream",
-          file_size: file.size, extracted_text: extractedText,
+          project_id: id!, user_id: user!.id, file_name: file.name, file_path: path,
+          file_type: file.type || "application/octet-stream", file_size: file.size, extracted_text: extractedText,
         });
         queryClient.invalidateQueries({ queryKey: ["documents", id] });
-
         return { type: "document", name: file.name, content: extractedText || undefined };
       }
     } catch (err) {
@@ -260,24 +284,17 @@ const ProjectPage = () => {
 
   const handleDeleteMessage = async (messageId: string) => {
     const { error } = await supabase.from("chat_messages").delete().eq("id", messageId);
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao excluir mensagem.", variant: "destructive" });
-      return;
-    }
+    if (error) { toast({ title: "Erro", description: "Falha ao excluir mensagem.", variant: "destructive" }); return; }
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
   };
 
   const handleToggleExclude = async (messageId: string, excluded: boolean) => {
     const { error } = await supabase.from("chat_messages").update({ excluded }).eq("id", messageId);
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao atualizar mensagem.", variant: "destructive" });
-      return;
-    }
+    if (error) { toast({ title: "Erro", description: "Falha ao atualizar mensagem.", variant: "destructive" }); return; }
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
   };
 
   const handleSend = async (content: string, attachments?: ChatAttachment[]) => {
-    // Build enriched content with attachments
     let enrichedContent = content;
     if (attachments && attachments.length > 0) {
       const attachmentParts: string[] = [];
@@ -291,7 +308,6 @@ const ProjectPage = () => {
       enrichedContent = content + attachmentParts.join("");
     }
 
-    // Save user message
     await saveMessage.mutateAsync({ role: "user", content: enrichedContent });
     queryClient.invalidateQueries({ queryKey: ["messages", id] });
 
@@ -304,26 +320,22 @@ const ProjectPage = () => {
           ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
           { role: "user" as const, content: enrichedContent },
         ];
-
         const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
         const resp = await fetch(CHAT_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
           body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id, userId: user!.id, action: "generate" }),
         });
-
         if (!resp.ok) throw new Error("Failed to generate");
         const result = await resp.json();
         const savedItems: string[] = [];
         if (result.saved?.prd) savedItems.push("PRD");
         if (result.saved?.tasks) savedItems.push("Tarefas");
         if (result.saved?.prompts) savedItems.push("Prompts");
-
         queryClient.invalidateQueries({ queryKey: ["project", id] });
         queryClient.invalidateQueries({ queryKey: ["tasks", id] });
         queryClient.invalidateQueries({ queryKey: ["prompts", id] });
         queryClient.invalidateQueries({ queryKey: ["debates", id] });
-
         let replyContent = "";
         if (savedItems.length > 0) {
           replyContent = `✅ Gerei e salvei automaticamente: **${savedItems.join(", ")}**. Confira nas abas do projeto!`;
@@ -333,7 +345,6 @@ const ProjectPage = () => {
         }
         if (result.content && savedItems.length > 0) replyContent += "\n\n" + result.content;
         replyContent += buildDebateSummary(result.debate);
-
         await saveMessage.mutateAsync({ role: "assistant", content: replyContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
       } catch (err) {
@@ -353,14 +364,12 @@ const ProjectPage = () => {
         ...messages.filter((m) => !m.excluded).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         { role: "user" as const, content: enrichedContent },
       ];
-
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ messages: historyMessages, projectContext: buildContext(), projectId: id }),
       });
-
       if (!resp.ok || !resp.body) {
         let errMsg = "Falha ao conectar com a IA.";
         try { const errData = await resp.json(); errMsg = errData.error || errMsg; } catch {}
@@ -369,13 +378,11 @@ const ProjectPage = () => {
         setStreamingContent("");
         return;
       }
-
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
       let fullContent = "";
       let streamDone = false;
-
       while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -396,7 +403,6 @@ const ProjectPage = () => {
           } catch { textBuffer = line + "\n" + textBuffer; break; }
         }
       }
-
       if (fullContent) {
         await saveMessage.mutateAsync({ role: "assistant", content: fullContent });
         queryClient.invalidateQueries({ queryKey: ["messages", id] });
@@ -461,13 +467,9 @@ const ProjectPage = () => {
       ]);
       const errors = results.filter(r => r.error);
       if (errors.length > 0) {
-        console.error("Reset errors:", errors.map(e => e.error));
         toast({ title: "Erro parcial", description: `Falha em ${errors.length} operação(ões) do reset.`, variant: "destructive" });
       }
-      // Clear local state
       setStreamingContent("");
-      // streamingContent is local state, clear it
-      // Invalidate all queries
       queryClient.invalidateQueries({ queryKey: ["messages", id] });
       queryClient.invalidateQueries({ queryKey: ["tasks", id] });
       queryClient.invalidateQueries({ queryKey: ["prompts", id] });
@@ -486,19 +488,20 @@ const ProjectPage = () => {
     }
   };
 
-  const tabs: { key: Tab; icon: typeof MessageSquare; label: string }[] = [
-    { key: "chat", icon: MessageSquare, label: "Chat" },
-    { key: "rules", icon: Scale, label: "Regras" },
-    { key: "prd", icon: FileText, label: "PRD" },
-    { key: "tasks", icon: CheckSquare, label: "Tarefas" },
-    { key: "prompts", icon: Zap, label: "Prompts" },
-    { key: "docs", icon: Paperclip, label: "Docs" },
-    { key: "skills", icon: Wrench, label: "Skills" },
-    { key: "debate", icon: Swords, label: "Debate" },
-    { key: "mcp", icon: Plug, label: "MCP" },
-  ];
+  // Tab badge counts
+  const completedTasks = tasks.filter((t) => t.status === "done").length;
+  const taskBadge = tasks.length > 0 ? `${completedTasks}/${tasks.length}` : null;
+  const promptBadge = prompts.length > 0 ? `${prompts.length}` : null;
+  const docBadge = documents.length > 0 ? `${documents.length}` : null;
+  const tabBadges: Partial<Record<Tab, string | null>> = {
+    tasks: taskBadge,
+    prompts: promptBadge,
+    docs: docBadge,
+  };
 
-  // Parse attachments from stored message content for display
+  // Progress bar
+  const totalProgress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
   const parseStoredAttachments = (content: string) => {
     const attachments: ChatAttachment[] = [];
     const imgRegex = /🖼️ \*\*Imagem anexada: (.+?)\*\*\n!\[.+?\]\((.+?)\)/g;
@@ -510,7 +513,6 @@ const ProjectPage = () => {
     while ((match = docRegex.exec(content)) !== null) {
       attachments.push({ type: "document", name: match[1] });
     }
-    // Clean content for display
     let clean = content
       .replace(/\n\n🖼️ \*\*Imagem anexada: .+?\*\*\n!\[.+?\]\(.+?\)/g, "")
       .replace(/\n\n📎 \*\*Documento anexado: .+?\*\*\n```\n[\s\S]*?\n```/g, "")
@@ -518,58 +520,144 @@ const ProjectPage = () => {
     return { attachments, cleanContent: clean };
   };
 
+  const currentStatus = statusOptions.find((s) => s.value === project?.status) || statusOptions[0];
+
   return (
     <div className="h-dvh flex flex-col bg-background">
-      <header className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-border bg-card">
-        <button onClick={() => navigate("/")} className="p-1 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={18} />
-        </button>
-        <span className="font-semibold text-sm text-foreground truncate flex-1">{project?.name || "..."}</span>
-        <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
-        <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
-        <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
-        <LLMSettings projectId={id!} />
-        <div className="relative flex items-center gap-1.5">
-          <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
-            {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            Gerar PRD
+      {/* Header */}
+      <header className="shrink-0 border-b border-border bg-card">
+        {/* Top row */}
+        <div className="flex items-center gap-2 px-3 py-2">
+          <button onClick={() => navigate("/")} className="p-1 text-muted-foreground hover:text-foreground">
+            <ArrowLeft size={18} />
           </button>
-          <button onClick={() => setShowResetConfirm(true)} disabled={isResetting}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-40 hover:bg-destructive/90 transition-all"
-            title="Resetar projeto">
-            {isResetting ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
-          </button>
-          {showResetConfirm && (
-            <div className="absolute top-full right-0 mt-2 z-50 w-72 p-4 rounded-xl bg-card border border-border shadow-xl">
-              <p className="text-sm font-medium text-foreground mb-1">Resetar projeto?</p>
-              <p className="text-xs text-muted-foreground mb-3">Isso vai apagar: chat, PRD, tarefas, prompts e debates. Essa ação não pode ser desfeita.</p>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setShowResetConfirm(false)} className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs">
-                  Cancelar
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-foreground truncate">{project?.name || "..."}</span>
+              {/* Status selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowStatusMenu(!showStatusMenu)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${currentStatus.color} hover:opacity-80 transition-opacity`}
+                >
+                  {currentStatus.label}
                 </button>
-                <button onClick={handleReset} disabled={isResetting}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-50">
-                  {isResetting && <Loader2 size={12} className="animate-spin" />}
-                  Confirmar
-                </button>
+                {showStatusMenu && (
+                  <div className="absolute top-full left-0 mt-1 z-50 w-36 py-1 rounded-lg bg-card border border-border shadow-xl">
+                    {statusOptions.map((opt) => (
+                      <button key={opt.value}
+                        onClick={() => { updateProject.mutate({ status: opt.value }); setShowStatusMenu(false); }}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-secondary transition-colors flex items-center gap-2 ${opt.value === project?.status ? "text-primary font-medium" : "text-foreground"}`}>
+                        <span className={`w-2 h-2 rounded-full ${opt.color.split(" ")[0]}`} />
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+            {/* Description */}
+            {editingDesc ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <input autoFocus value={descDraft}
+                  onChange={(e) => setDescDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { updateProject.mutate({ description: descDraft }); setEditingDesc(false); } }}
+                  placeholder="Descrição do projeto..."
+                  className="flex-1 text-xs px-1.5 py-0.5 rounded bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                <button onClick={() => { updateProject.mutate({ description: descDraft }); setEditingDesc(false); }}
+                  className="p-0.5 text-primary"><Check size={12} /></button>
+                <button onClick={() => setEditingDesc(false)}
+                  className="p-0.5 text-muted-foreground"><X size={12} /></button>
+              </div>
+            ) : (
+              <button onClick={() => { setDescDraft(project?.description || ""); setEditingDesc(true); }}
+                className="flex items-center gap-1 mt-0.5 group/desc">
+                <span className="text-[11px] text-muted-foreground truncate max-w-[300px]">
+                  {project?.description || "Adicionar descrição..."}
+                </span>
+                <Pencil size={10} className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" />
+              </button>
+            )}
+          </div>
+
+          {/* Progress bar (compact) */}
+          {tasks.length > 0 && (
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              <div className="w-20 h-1.5 rounded-full bg-secondary overflow-hidden">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${totalProgress}%` }} />
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">{totalProgress}%</span>
+            </div>
           )}
+
+          {/* Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
+            <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
+            <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
+            <LLMSettings projectId={id!} />
+            <div className="relative flex items-center gap-1">
+              <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
+                {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                Gerar
+              </button>
+              <button onClick={() => setShowResetConfirm(true)} disabled={isResetting}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-40 hover:bg-destructive/90 transition-all"
+                title="Resetar projeto">
+                {isResetting ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+              </button>
+              {showResetConfirm && (
+                <div className="absolute top-full right-0 mt-2 z-50 w-72 p-4 rounded-xl bg-card border border-border shadow-xl">
+                  <p className="text-sm font-medium text-foreground mb-1">Resetar projeto?</p>
+                  <p className="text-xs text-muted-foreground mb-3">Isso vai apagar: chat, PRD, tarefas, prompts e debates. Essa ação não pode ser desfeita.</p>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setShowResetConfirm(false)} className="px-3 py-1.5 rounded-lg bg-secondary text-foreground text-xs">Cancelar</button>
+                    <button onClick={handleReset} disabled={isResetting}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-50">
+                      {isResetting && <Loader2 size={12} className="animate-spin" />}
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs - grouped */}
+        <div className="flex items-center px-1">
+          {tabGroups.map((group, gi) => (
+            <div key={group.label} className="flex items-center">
+              {gi > 0 && (
+                <div className="w-px h-5 bg-border mx-0.5" />
+              )}
+              {group.tabs.map((tab) => {
+                const badge = tabBadges[tab.key];
+                return (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium transition-colors relative ${
+                      activeTab === tab.key
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}>
+                    <tab.icon size={13} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    {badge && (
+                      <span className="text-[9px] font-mono px-1 py-0 rounded-full bg-secondary text-muted-foreground ml-0.5">
+                        {badge}
+                      </span>
+                    )}
+                    {activeTab === tab.key && (
+                      <span className="absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </header>
-
-      <div className="shrink-0 flex border-b border-border bg-card/50">
-        {tabs.map((tab) => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors ${
-              activeTab === tab.key ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
-            }`}>
-            <tab.icon size={14} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {activeTab === "chat" && (
         <>
@@ -587,22 +675,14 @@ const ProjectPage = () => {
                   const isLastAssistant = msg.role === "assistant" && !messages.slice(idx + 1).some(m => m.role === "assistant");
                   const parsed = msg.role === "user" ? parseStoredAttachments(msg.content) : { attachments: [], cleanContent: msg.content };
                   return (
-                    <ChatMessage
-                      key={msg.id}
+                    <ChatMessage key={msg.id}
                       message={{
-                        id: msg.id,
-                        role: msg.role as "user" | "assistant",
-                        content: parsed.cleanContent,
-                        timestamp: new Date(msg.created_at),
-                        excluded: !!msg.excluded,
+                        id: msg.id, role: msg.role as "user" | "assistant", content: parsed.cleanContent,
+                        timestamp: new Date(msg.created_at), excluded: !!msg.excluded,
                         attachments: parsed.attachments.length > 0 ? parsed.attachments : undefined,
                       }}
-                      onDelete={handleDeleteMessage}
-                      onToggleExclude={handleToggleExclude}
-                      onSendOption={handleSend}
-                      isLastAssistant={isLastAssistant}
-                      isLoading={isLoading}
-                    />
+                      onDelete={handleDeleteMessage} onToggleExclude={handleToggleExclude}
+                      onSendOption={handleSend} isLastAssistant={isLastAssistant} isLoading={isLoading} />
                   );
                 })}
                 {streamingContent && (
@@ -612,12 +692,7 @@ const ProjectPage = () => {
               </div>
             )}
           </div>
-          <ChatInput
-            onSend={handleSend}
-            isLoading={isLoading}
-            documents={documents}
-            onUploadFile={handleUploadFile}
-          />
+          <ChatInput onSend={handleSend} isLoading={isLoading} documents={documents} onUploadFile={handleUploadFile} />
         </>
       )}
 
