@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip,
-  Wrench, Scale, Swords, RotateCcw, Plug, Pencil, Check, X,
+  Wrench, Scale, Swords, RotateCcw, Plug, Pencil, Check, X, Target, Calendar,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -22,11 +22,13 @@ import BusinessRules from "@/components/project/BusinessRules";
 import ConsistencyCheck from "@/components/project/ConsistencyCheck";
 import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
-import DebateView from "@/components/project/DebateView";
+import DebateStage from "@/components/project/DebateStage";
 import MCPConfig from "@/components/project/MCPConfig";
+import ProjectObjective from "@/components/project/ProjectObjective";
+import ProjectTimeline from "@/components/project/ProjectTimeline";
 import { ChatAttachment } from "@/types/chat";
 
-type Tab = "chat" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "debate" | "mcp";
+type Tab = "objective" | "chat" | "debate" | "prd" | "tasks" | "prompts" | "docs" | "rules" | "skills" | "mcp" | "timeline";
 
 const statusOptions = [
   { value: "planning", label: "Planejando", color: "bg-yellow-500/20 text-yellow-400" },
@@ -37,11 +39,20 @@ const statusOptions = [
 
 const tabGroups = [
   {
-    label: "Planejamento",
+    label: "Configuração",
     tabs: [
-      { key: "chat" as Tab, icon: MessageSquare, label: "Chat" },
       { key: "rules" as Tab, icon: Scale, label: "Regras" },
-      { key: "prd" as Tab, icon: FileText, label: "PRD" },
+      { key: "skills" as Tab, icon: Wrench, label: "Skills" },
+      { key: "docs" as Tab, icon: Paperclip, label: "Docs" },
+    ],
+  },
+  {
+    label: "Etapas do Projeto",
+    tabs: [
+      { key: "objective" as Tab, icon: Target, label: "01·Objetivo" },
+      { key: "chat" as Tab, icon: MessageSquare, label: "02·Chat" },
+      { key: "debate" as Tab, icon: Swords, label: "03·Debate" },
+      { key: "prd" as Tab, icon: FileText, label: "04·PRD" },
     ],
   },
   {
@@ -49,15 +60,7 @@ const tabGroups = [
     tabs: [
       { key: "tasks" as Tab, icon: CheckSquare, label: "Tarefas" },
       { key: "prompts" as Tab, icon: Zap, label: "Prompts" },
-      { key: "docs" as Tab, icon: Paperclip, label: "Docs" },
-    ],
-  },
-  {
-    label: "Configuração",
-    tabs: [
-      { key: "skills" as Tab, icon: Wrench, label: "Skills" },
-      { key: "debate" as Tab, icon: Swords, label: "Debate" },
-      { key: "mcp" as Tab, icon: Plug, label: "MCP" },
+      { key: "timeline" as Tab, icon: Calendar, label: "Timeline" },
     ],
   },
 ];
@@ -69,7 +72,7 @@ const ProjectPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("chat");
+  const [activeTab, setActiveTab] = useState<Tab>("objective");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -699,13 +702,14 @@ const ProjectPage = () => {
       {activeTab === "prd" && (
         <PRDView projectId={id!} prdContent={project?.prd_content} onRegenerate={handleGenerate} isRegenerating={isGenerating} />
       )}
+      {activeTab === "objective" && <ProjectObjective projectId={id!} description={project?.description} />}
       {activeTab === "tasks" && <TaskList projectId={id!} />}
       {activeTab === "prompts" && <PromptList projectId={id!} />}
       {activeTab === "rules" && <BusinessRules projectId={id!} />}
       {activeTab === "docs" && <DocumentList projectId={id!} />}
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
-      {activeTab === "debate" && <DebateView projectId={id!} />}
-      {activeTab === "mcp" && <MCPConfig projectId={id!} />}
+      {activeTab === "debate" && <DebateStage projectId={id!} onPRDGenerated={() => { queryClient.invalidateQueries({ queryKey: ["project", id] }); setActiveTab("prd"); }} />}
+      {activeTab === "timeline" && <ProjectTimeline projectId={id!} />}
     </div>
   );
 };
