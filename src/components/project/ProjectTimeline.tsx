@@ -23,10 +23,10 @@ interface TimelineEvent {
 
 const phaseLabels: Record<Phase, string> = {
   config: "0·Config",
-  feeding: "1·Chat",
-  debate: "2·Análise",
-  prd: "3·Escopo",
-  execution: "4·Execução",
+  feeding: "01·Chat",
+  debate: "02·Debate",
+  prd: "03·Escopo (PRD)",
+  execution: "04-06·Execução",
 };
 
 const phaseColors: Record<string, string> = {
@@ -289,7 +289,7 @@ const ProjectTimeline = ({ projectId }: ProjectTimelineProps) => {
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground text-sm gap-3">
               <Calendar size={40} className="opacity-30" />
               <p className="font-medium">Nenhum evento registrado</p>
-              <p className="text-xs">Comece definindo o objetivo do projeto na Etapa 01.</p>
+              <p className="text-xs">Comece definindo o objetivo do projeto na Etapa 01·Chat.</p>
             </div>
           ) : (
             <div className="relative">

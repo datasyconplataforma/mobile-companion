@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, FileText, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip,
-  Wrench, Scale, Swords, RotateCcw, Plug, Pencil, Check, X, Target, Calendar,
+  ArrowLeft, CheckSquare, Zap, MessageSquare, Loader2, Sparkles, Paperclip,
+  Wrench, RotateCcw, Plug, Pencil, Check, X, ScrollText, Code2,
+  History, BrainCircuit, Gavel, FileText,
 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +25,6 @@ import GitHubConnection from "@/components/project/GitHubConnection";
 import ShareProject from "@/components/project/ShareProject";
 import DebateStage from "@/components/project/DebateStage";
 import MCPConfig from "@/components/project/MCPConfig";
-import ProjectObjective from "@/components/project/ProjectObjective";
 import ProjectTimeline from "@/components/project/ProjectTimeline";
 import { ChatAttachment } from "@/types/chat";
 
@@ -72,7 +72,7 @@ const ProjectPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("objective");
+  const [activeTab, setActiveTab] = useState<Tab>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -709,6 +709,7 @@ const ProjectPage = () => {
       {activeTab === "skills" && <ProjectSkills projectId={id!} />}
       {activeTab === "debate" && <DebateStage projectId={id!} onPRDGenerated={() => { queryClient.invalidateQueries({ queryKey: ["project", id] }); setActiveTab("prd"); }} />}
       {activeTab === "timeline" && <ProjectTimeline projectId={id!} />}
+      {activeTab === "mcp" && <MCPConfig projectId={id!} />}
     </div>
   );
 };
