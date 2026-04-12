@@ -176,46 +176,28 @@ const DashboardPage = () => {
   }, [projects, search]);
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
-      {/* Header */}
-      <header className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-md bg-primary/20 flex items-center justify-center">
-            <Terminal size={14} className="text-primary" />
-          </div>
-          <span className="font-semibold text-sm text-foreground">CodeBuddy</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/skills")}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <Wrench size={14} /> Skills
-          </button>
-          <button onClick={signOut}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <LogOut size={14} /> Sair
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-        <div className="max-w-3xl mx-auto">
+    <div className="flex-1 flex flex-col p-4 md:p-8">
+      <div className="max-w-5xl mx-auto w-full">
           {/* Title row */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg font-bold text-foreground">Meus Projetos</h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-lg bg-secondary p-0.5">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">Meus Projetos</h1>
+              <p className="text-sm text-muted-foreground mt-1">Gerencie seu fluxo de desenvolvimento com IA.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-xl bg-secondary/50 p-1 border border-white/5">
                 <button onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                  <LayoutGrid size={14} />
+                  className={`p-1.5 rounded-lg transition-all ${viewMode === "grid" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                  <LayoutGrid size={16} />
                 </button>
                 <button onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                  <List size={14} />
+                  className={`p-1.5 rounded-lg transition-all ${viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                  <List size={16} />
                 </button>
               </div>
               <button onClick={() => setShowNew(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:shadow-glow transition-all">
-                <Plus size={14} /> Novo
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-gradient text-primary-foreground text-sm font-bold shadow-glow hover:scale-105 active:scale-95 transition-all">
+                <Plus size={18} /> Novo Projeto
               </button>
             </div>
           </div>
@@ -234,7 +216,9 @@ const DashboardPage = () => {
           )}
 
           {showNew && (
-            <form onSubmit={handleCreate} className="mb-6 p-4 rounded-xl bg-card border border-primary/20 shadow-glow flex flex-col gap-3">
+            <form onSubmit={handleCreate} className="mb-10 p-6 glass-card border-primary/20 shadow-glow flex flex-col gap-4 relative animate-in fade-in slide-in-from-top-4 duration-500">
+              <button type="button" onClick={() => setShowNew(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X size={18} /></button>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Novo Projeto</h3>
               <div className="space-y-1">
                 <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">Nome do Projeto</label>
                 <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)}
@@ -290,97 +274,103 @@ const DashboardPage = () => {
 
                 return (
                   <div key={project.id}
-                    className={`relative p-4 rounded-xl bg-card border border-border border-l-[3px] ${statusBorder[project.status] || statusBorder.planning} hover:border-primary/40 hover:shadow-glow transition-all group`}>
+                    className={cn(
+                      "group relative p-5 glass-card border-l-[4px] hover:scale-[1.02] active:scale-[0.98]",
+                      statusBorder[project.status] || statusBorder.planning
+                    )}>
+                    
                     {/* Delete confirmation overlay */}
                     {deletingId === project.id && (
-                      <div className="absolute inset-0 bg-card/95 backdrop-blur-sm rounded-xl flex items-center justify-center gap-3 z-10">
-                        <span className="text-sm text-foreground">Excluir projeto?</span>
+                      <div className="absolute inset-0 bg-background/95 backdrop-blur-md rounded-xl flex items-center justify-center gap-3 z-20">
+                        <span className="text-sm font-semibold">Excluir projeto?</span>
                         <button onClick={() => deleteProject.mutate(project.id)}
-                          className="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium">Excluir</button>
+                          className="px-4 py-1.5 rounded-lg bg-destructive text-white text-xs font-bold hover:bg-destructive/80 transition-colors">Excluir</button>
                         <button onClick={() => setDeletingId(null)}
-                          className="px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground text-xs">Cancelar</button>
+                          className="px-4 py-1.5 rounded-lg bg-secondary text-muted-foreground text-xs font-medium hover:text-foreground transition-colors">Cancelar</button>
                       </div>
                     )}
 
                     {/* Top row */}
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-3">
                       {editingId === project.id ? (
-                        <div className="flex items-center gap-1.5 flex-1 mr-2">
+                        <div className="flex items-center gap-2 flex-1 mr-4">
                           <input autoFocus value={editName} onChange={(e) => setEditName(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleRename(project.id)}
-                            className="flex-1 px-2 py-0.5 rounded bg-secondary text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
-                          <button onClick={() => handleRename(project.id)} className="p-1 text-primary"><Check size={14} /></button>
-                          <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground"><X size={14} /></button>
+                            className="flex-1 px-3 py-1 rounded-lg bg-secondary/50 border border-white/5 text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-ring" />
+                          <button onClick={() => handleRename(project.id)} className="p-1.5 text-primary bg-primary/10 rounded-md hover:bg-primary/20"><Check size={14} /></button>
+                          <button onClick={() => setEditingId(null)} className="p-1.5 text-muted-foreground hover:bg-secondary/50 rounded-md"><X size={14} /></button>
                         </div>
                       ) : (
-                        <button onClick={() => navigate(`/project/${project.id}`)} className="text-left flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm text-foreground truncate">{project.name}</h3>
+                        <button onClick={() => navigate(`/project/${project.id}`)} className="text-left flex-1 min-w-0 mr-4">
+                          <h3 className="font-bold text-base text-foreground truncate group-hover:text-primary transition-colors">{project.name}</h3>
                         </button>
                       )}
+                      
                       <div className="flex items-center gap-1.5 shrink-0">
-                        {(project as any)._shared && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground font-medium flex items-center gap-1">
-                            <Users size={10} /> Compartilhado
-                          </span>
-                        )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColors[project.status] || statusColors.planning}`}>
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                          statusColors[project.status] || statusColors.planning
+                        )}>
                           {statusLabels[project.status] || "Planejando"}
                         </span>
+                        
                         {!(project as any)._shared && (
-                          <>
+                          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all ml-1 translate-x-1 group-hover:translate-x-0">
                             <button onClick={(e) => { e.stopPropagation(); setEditingId(project.id); setEditName(project.name); }}
-                              className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-all">
-                              <Pencil size={13} />
+                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-md transition-all">
+                              <Pencil size={14} />
                             </button>
                             <button onClick={(e) => { e.stopPropagation(); setDeletingId(project.id); }}
-                              className="p-1 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all">
-                              <Trash2 size={13} />
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all">
+                              <Trash2 size={14} />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <button onClick={() => navigate(`/project/${project.id}`)} className="w-full text-left">
+                    <button onClick={() => navigate(`/project/${project.id}`)} className="w-full text-left space-y-4">
                       {project.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{project.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed h-8">{project.description}</p>
                       )}
 
-                      {/* Metrics row */}
-                      <div className="flex items-center gap-3 mt-1">
+                      {/* Metrics bar */}
+                      <div className="flex items-center gap-4 pt-1 border-t border-white/5">
                         {/* PRD badge */}
-                        <span className={`flex items-center gap-1 text-[10px] font-medium ${hasPrd ? "text-primary" : "text-muted-foreground/50"}`}>
-                          <FileText size={11} />
-                          PRD
-                        </span>
+                        <div className="flex flex-col gap-0.5 min-w-[32px]">
+                          <span className="text-[9px] uppercase tracking-tighter text-muted-foreground/50 font-bold">PRD</span>
+                          <div className={cn("flex items-center gap-1 text-[10px] font-bold", hasPrd ? "text-emerald-400" : "text-muted-foreground/30")}>
+                            <FileText size={10} />
+                            {hasPrd ? "OK" : "—"}
+                          </div>
+                        </div>
 
                         {/* Tasks */}
-                        {tc && tc.total > 0 ? (
-                          <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                            <CheckSquare size={11} />
-                            <span>{tc.done}/{tc.total}</span>
-                            <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
-                              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-                            </div>
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground/50">
-                            <CheckSquare size={11} /> 0
-                          </span>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[9px] uppercase tracking-tighter text-muted-foreground/50 font-bold">Progresso tarefas</span>
+                            <span className="text-[10px] font-mono text-muted-foreground">{tc ? `${tc.done}/${tc.total}` : "0"}</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-secondary/50 overflow-hidden border border-white/5">
+                            <div className="h-full rounded-full bg-brand-gradient transition-all duration-1000" style={{ width: `${progress}%` }} />
+                          </div>
+                        </div>
 
                         {/* Messages */}
-                        <span className={`flex items-center gap-1 text-[10px] ${mc > 0 ? "text-muted-foreground" : "text-muted-foreground/50"}`}>
-                          <MessageSquare size={11} />
-                          {mc}
-                        </span>
+                        <div className="flex flex-col items-end gap-0.5 min-w-[40px]">
+                          <span className="text-[9px] uppercase tracking-tighter text-muted-foreground/50 font-bold">Feed</span>
+                          <div className={cn("flex items-center gap-1 text-[10px] font-bold font-mono", mc > 0 ? "text-blue-400" : "text-muted-foreground/30")}>
+                            <MessageSquare size={10} />
+                            {mc}
+                          </div>
+                        </div>
+                      </div>
 
-                        <span className="ml-auto text-[10px] text-muted-foreground font-mono">
-                          {new Date(project.updated_at).toLocaleDateString("pt-BR")}
-                        </span>
+                      <div className="flex items-center justify-between text-[9px] text-muted-foreground/40 font-mono tracking-widest pt-1">
+                        <span className="uppercase">CodeBuddy Project Instance</span>
+                        <span>{new Date(project.updated_at).toLocaleDateString("pt-BR")}</span>
                       </div>
                     </button>
-                  </div>
                 );
               })}
             </div>

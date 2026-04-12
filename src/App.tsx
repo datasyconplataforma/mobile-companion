@@ -10,6 +10,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProjectPage from "./pages/ProjectPage";
 import SkillsPage from "./pages/SkillsPage";
 import NotFound from "./pages/NotFound";
+import AppLayout from "./components/layout/AppLayout";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
@@ -26,7 +27,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
-  return <>{children}</>;
+  return <AppLayout>{children}</AppLayout>;
 };
 
 const App = () => (

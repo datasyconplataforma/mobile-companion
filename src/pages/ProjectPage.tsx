@@ -526,84 +526,98 @@ const ProjectPage = () => {
   const currentStatus = statusOptions.find((s) => s.value === project?.status) || statusOptions[0];
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
-      {/* Header */}
-      <header className="shrink-0 border-b border-border bg-card">
-        {/* Top row */}
-        <div className="flex items-center gap-2 px-3 py-2">
-          <button onClick={() => navigate("/")} className="p-1 text-muted-foreground hover:text-foreground">
-            <ArrowLeft size={18} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-foreground truncate">{project?.name || "..."}</span>
-              {/* Status selector */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowStatusMenu(!showStatusMenu)}
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${currentStatus.color} hover:opacity-80 transition-opacity`}
-                >
-                  {currentStatus.label}
-                </button>
-                {showStatusMenu && (
-                  <div className="absolute top-full left-0 mt-1 z-50 w-36 py-1 rounded-lg bg-card border border-border shadow-xl">
-                    {statusOptions.map((opt) => (
-                      <button key={opt.value}
-                        onClick={() => { updateProject.mutate({ status: opt.value }); setShowStatusMenu(false); }}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-secondary transition-colors flex items-center gap-2 ${opt.value === project?.status ? "text-primary font-medium" : "text-foreground"}`}>
-                        <span className={`w-2 h-2 rounded-full ${opt.color.split(" ")[0]}`} />
-                        {opt.label}
-                      </button>
-                    ))}
+    <div className="flex-1 flex flex-col h-full bg-background overflow-hidden animate-in fade-in duration-700">
+      {/* Page Header */}
+      <header className="shrink-0 glass-header px-4 py-4 z-20">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all active:scale-90"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-foreground tracking-tight">{project?.name}</h1>
+                <div className="relative">
+                  <button
+                    onClick={() => setShowStatusMenu(!showStatusMenu)}
+                    className={cn(
+                      "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider transition-all hover:opacity-80 active:scale-95",
+                      currentStatus.color
+                    )}
+                  >
+                    {currentStatus.label}
+                  </button>
+                  {showStatusMenu && (
+                    <div className="absolute top-full left-0 mt-1 z-50 w-40 py-1 glass-card border-white/10 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                      {statusOptions.map((opt) => (
+                        <button key={opt.value}
+                          onClick={() => { updateProject.mutate({ status: opt.value }); setShowStatusMenu(false); }}
+                          className={`w-full text-left px-4 py-2 text-xs hover:bg-white/5 transition-colors flex items-center gap-2 ${opt.value === project?.status ? "text-primary font-bold" : "text-foreground"}`}>
+                          <span className={cn("w-2 h-2 rounded-full", opt.color.split(" ")[0])} />
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                {editingDesc ? (
+                  <div className="flex items-center gap-1.5">
+                    <input autoFocus value={descDraft}
+                      onChange={(e) => setDescDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { updateProject.mutate({ description: descDraft }); setEditingDesc(false); } }}
+                      placeholder="Descrição do projeto..."
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-secondary/50 border border-white/5 text-foreground focus:outline-none focus:ring-1 focus:ring-ring w-64" />
+                    <button onClick={() => { updateProject.mutate({ description: descDraft }); setEditingDesc(false); }}
+                      className="p-1 text-primary bg-primary/10 rounded-md"><Check size={10} /></button>
+                    <button onClick={() => setEditingDesc(false)}
+                      className="p-1 text-muted-foreground hover:bg-secondary/50 rounded-md"><X size={10} /></button>
                   </div>
+                ) : (
+                  <button onClick={() => { setDescDraft(project?.description || ""); setEditingDesc(true); }}
+                    className="flex items-center gap-1.5 group/desc">
+                    <p className="text-[10px] text-muted-foreground font-mono truncate max-w-[400px]">
+                      {project?.description || "Clique para adicionar uma descrição..."}
+                    </p>
+                    <Pencil size={8} className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" />
+                  </button>
                 )}
               </div>
             </div>
-            {/* Description */}
-            {editingDesc ? (
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <input autoFocus value={descDraft}
-                  onChange={(e) => setDescDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { updateProject.mutate({ description: descDraft }); setEditingDesc(false); } }}
-                  placeholder="Descrição do projeto..."
-                  className="flex-1 text-xs px-1.5 py-0.5 rounded bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-                <button onClick={() => { updateProject.mutate({ description: descDraft }); setEditingDesc(false); }}
-                  className="p-0.5 text-primary"><Check size={12} /></button>
-                <button onClick={() => setEditingDesc(false)}
-                  className="p-0.5 text-muted-foreground"><X size={12} /></button>
-              </div>
-            ) : (
-              <button onClick={() => { setDescDraft(project?.description || ""); setEditingDesc(true); }}
-                className="flex items-center gap-1 mt-0.5 group/desc">
-                <span className="text-[11px] text-muted-foreground truncate max-w-[300px]">
-                  {project?.description || "Adicionar descrição..."}
-                </span>
-                <Pencil size={10} className="text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity" />
-              </button>
-            )}
           </div>
 
-          {/* Progress bar (compact) */}
-          {tasks.length > 0 && (
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              <div className="w-20 h-1.5 rounded-full bg-secondary overflow-hidden">
-                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${totalProgress}%` }} />
+          <div className="flex items-center gap-3">
+            {/* Progress bar */}
+            {tasks.length > 0 && (
+              <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-secondary/30 border border-white/5">
+                <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground/50">Fluxo Completo</span>
+                  <span className="text-[10px] font-mono font-bold text-primary">{totalProgress}%</span>
+                </div>
+                <div className="w-24 h-1.5 rounded-full bg-secondary/50 overflow-hidden border border-white/5">
+                  <div className="h-full rounded-full bg-brand-gradient transition-all duration-1000" style={{ width: `${totalProgress}%` }} />
+                </div>
               </div>
-              <span className="text-[10px] text-muted-foreground font-mono">{totalProgress}%</span>
-            </div>
-          )}
+            )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
-            <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
-            <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
-            <LLMSettings />
-            <div className="relative flex items-center gap-1">
-              <button onClick={handleGenerate} disabled={isGenerating || isLoading || messages.length < 4}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium disabled:opacity-40 hover:shadow-glow transition-all">
-                {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-                Gerar
+            <div className="flex items-center gap-1 px-1 py-1 rounded-xl bg-secondary/20 border border-white/5">
+              <ShareProject projectId={id!} isOwner={project?.user_id === user?.id} />
+              <ConsistencyCheck projectId={id!} onSendToChat={(msg) => { setActiveTab("chat"); handleSend(msg); }} />
+              <GitHubConnection projectId={id!} githubRepoUrl={project?.github_repo_url} onRepoUpdated={() => queryClient.invalidateQueries({ queryKey: ["project", id] })} />
+              <LLMSettings />
+            </div>
+            <div className="relative flex items-center gap-1.5">
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating || isLoading || messages.length < 4}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-gradient text-primary-foreground text-xs font-bold shadow-glow hover:scale-105 active:scale-95 disabled:opacity-40 transition-all"
+              >
+                {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                Gerar Fluxo
               </button>
               <button onClick={() => setShowResetConfirm(true)} disabled={isResetting}
                 className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium disabled:opacity-40 hover:bg-destructive/90 transition-all"
@@ -637,22 +651,25 @@ const ProjectPage = () => {
               )}
               {group.tabs.map((tab) => {
                 const badge = tabBadges[tab.key];
+                const active = activeTab === tab.key;
                 return (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium transition-colors relative ${
-                      activeTab === tab.key
-                        ? "text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}>
-                    <tab.icon size={13} />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={cn(
+                      "flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold transition-all relative group/tab",
+                      active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <tab.icon size={14} className={cn("transition-transform group-hover/tab:scale-110", active && "scale-110")} />
+                    <span className="hidden sm:inline lowercase tracking-tight">{tab.label}</span>
                     {badge && (
-                      <span className="text-[9px] font-mono px-1 py-0 rounded-full bg-secondary text-muted-foreground ml-0.5">
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0 rounded-full bg-primary/10 text-primary border border-primary/20 ml-1">
                         {badge}
                       </span>
                     )}
-                    {activeTab === tab.key && (
-                      <span className="absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-primary" />
+                    {active && (
+                      <span className="absolute bottom-0 left-2 right-2 h-[3px] rounded-full bg-primary shadow-glow animate-in zoom-in-50 duration-300" />
                     )}
                   </button>
                 );

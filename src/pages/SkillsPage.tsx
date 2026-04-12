@@ -193,21 +193,20 @@ const SkillsPage = () => {
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-background">
-      <header className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-border bg-card">
-        <button onClick={() => navigate("/")} className="p-1 text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={18} />
-        </button>
-        <Wrench size={16} className="text-primary" />
-        <span className="font-semibold text-sm text-foreground">Skills & Tecnologias</span>
-      </header>
+    <div className="flex-1 flex flex-col p-4 md:p-8">
+      <div className="max-w-4xl mx-auto w-full space-y-8">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent italic">
+            Skills Central
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Configure o conhecimento base para suas IAs.</p>
+        </div>
 
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-        <div className="max-w-2xl mx-auto space-y-6">
-
-          {/* Add skill */}
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Adicionar Skill</h2>
+        {/* Add skill */}
+        <div className="p-6 glass-card border-primary/20 space-y-4">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+            <Plus size={16} /> Adicionar Nova Skill
+          </h2>
             <div className="flex gap-2 flex-wrap">
               <div className="flex rounded-lg bg-secondary overflow-hidden shrink-0">
                 <button

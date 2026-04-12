@@ -27,20 +27,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onToggleEx
 
   return (
     <div
-      className={`group relative flex gap-3 px-4 py-3 transition-opacity ${
-        isUser ? "" : "bg-card/50"
-      } ${isExcluded ? "opacity-40" : ""}`}
+      className={cn(
+        "group relative flex gap-4 px-6 py-6 transition-all duration-300",
+        isUser ? "bg-transparent" : "bg-secondary/20 backdrop-blur-sm border-y border-white/5",
+        isExcluded && "opacity-40 grayscale"
+      )}
     >
       <div
-        className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold ${
+        className={cn(
+          "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shadow-glow transition-transform duration-300 group-hover:scale-110",
           isUser
             ? "bg-accent text-accent-foreground"
-            : "bg-primary/20 text-primary"
-        }`}
+            : "bg-brand-gradient text-primary-foreground"
+        )}
       >
-        {isUser ? <User size={14} /> : <Bot size={14} />}
+        {isUser ? <User size={18} /> : <Bot size={18} />}
       </div>
-      <div className="flex-1 min-w-0 text-sm leading-relaxed">
+      <div className="flex-1 min-w-0 text-[14px] leading-relaxed">
         {isExcluded && (
           <Badge variant="outline" className="mb-1 text-[10px] px-1.5 py-0 text-muted-foreground border-muted">
             fora do contexto

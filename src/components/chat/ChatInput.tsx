@@ -102,43 +102,46 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, documents = []
   const docsWithText = documents.filter((d) => d.extracted_text);
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-card">
-      <div className="max-w-2xl mx-auto space-y-2">
+    <form onSubmit={handleSubmit} className="p-4 md:p-6 bg-gradient-to-t from-background via-background/80 to-transparent pt-10">
+      <div className="max-w-3xl mx-auto space-y-3">
         {/* Attachment preview */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 animate-in slide-in-from-bottom-2 duration-300">
             {attachments.map((att, i) => (
               <div
                 key={i}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-secondary border border-border text-xs text-foreground"
+                className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl bg-secondary/50 backdrop-blur-md border border-white/5 text-xs text-foreground group/att"
               >
                 {att.type === "image" ? (
-                  <>
-                    <Image size={12} className="text-primary" />
+                  <div className="relative">
                     {att.url && (
-                      <img src={att.url} alt="" className="h-6 w-6 rounded object-cover" />
+                      <img src={att.url} alt="" className="h-8 w-8 rounded-lg object-cover shadow-sm" />
                     )}
-                  </>
+                    <div className="absolute inset-0 bg-primary/20 rounded-lg opacity-0 group-hover/att:opacity-100 transition-opacity" />
+                  </div>
                 ) : (
-                  <FileText size={12} className="text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <FileText size={14} className="text-primary" />
+                  </div>
                 )}
-                <span className="truncate max-w-[120px]">{att.name}</span>
-                <button type="button" onClick={() => removeAttachment(i)} className="p-0.5 hover:text-destructive">
-                  <X size={10} />
+                <span className="truncate max-w-[150px] font-medium">{att.name}</span>
+                <button type="button" onClick={() => removeAttachment(i)} className="p-1 rounded-full hover:bg-destructive/20 hover:text-destructive transition-colors">
+                  <X size={12} />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex items-end gap-2">
+        <div className="glass-card p-2 border-white/10 rounded-2xl shadow-glow transition-all focus-within:ring-2 focus-within:ring-primary/20">
+          <div className="flex items-end gap-2">
           {/* Attach buttons */}
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading || isUploading}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+              className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-40"
               title="Anexar arquivo ou imagem"
             >
               <Paperclip size={16} />
@@ -149,7 +152,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, documents = []
                   <button
                     type="button"
                     disabled={isLoading}
-                    className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-40"
+                    className="p-2.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-40"
                     title="Enviar documento do projeto"
                   >
                     <FileText size={16} />
@@ -193,7 +196,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, documents = []
                   : "Descreva seu app ou peça uma atualização..."
               }
               rows={1}
-              className="w-full resize-none bg-secondary text-foreground placeholder:text-muted-foreground rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring scrollbar-thin font-sans"
+              className="w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground/60 rounded-xl px-2 py-2.5 text-sm focus:outline-none scrollbar-thin font-sans leading-relaxed"
               style={{ maxHeight: "120px" }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
@@ -206,10 +209,12 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, documents = []
           <button
             type="submit"
             disabled={(!input.trim() && attachments.length === 0) || isLoading || isUploading}
-            className="shrink-0 w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40 hover:shadow-glow transition-all"
+            className="shrink-0 w-10 h-10 rounded-xl bg-brand-gradient text-primary-foreground flex items-center justify-center disabled:opacity-40 shadow-glow hover:scale-110 active:scale-90 transition-all"
           >
-            <Send size={16} />
+            <Send size={18} className={cn(isLoading && "animate-pulse")} />
           </button>
+        </div>
+        </div>
         </div>
 
         <input

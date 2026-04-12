@@ -83,12 +83,13 @@ const Index = () => {
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Brain size={18} className="text-primary-foreground" />
+            <div className="w-9 h-9 rounded-xl bg-brand-gradient shadow-glow flex items-center justify-center">
+              <Terminal size={20} className="text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-foreground font-mono">
-              Datasycon
+            <span className="text-xl font-black tracking-tighter text-foreground">
+              CodeBuddy
             </span>
+          </div>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -102,9 +103,9 @@ const Index = () => {
             <Button
               size="sm"
               onClick={() => navigate("/auth")}
-              className="rounded-full"
+              className="rounded-xl bg-brand-gradient text-primary-foreground shadow-glow hover:scale-105 active:scale-95 transition-all font-bold px-5"
             >
-              Começar grátis
+              Começar Agora
             </Button>
           </div>
         </div>
@@ -133,10 +134,10 @@ const Index = () => {
             <Button
               size="lg"
               onClick={() => navigate("/auth")}
-              className="rounded-full text-base px-8 h-12 shadow-glow"
+              className="rounded-2xl text-base px-10 h-14 bg-brand-gradient text-primary-foreground shadow-glow hover:scale-105 active:scale-95 transition-all font-black group"
             >
-              Começar agora
-              <ArrowRight size={18} />
+              Iniciar Workspace Grátis
+              <ArrowRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button
               variant="outline"
@@ -151,13 +152,15 @@ const Index = () => {
           </div>
 
           {/* Mock terminal */}
-          <div className="mt-16 max-w-2xl mx-auto">
-            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-                <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                <div className="w-3 h-3 rounded-full bg-[hsl(var(--terminal-yellow))]/60" />
-                <div className="w-3 h-3 rounded-full bg-primary/60" />
-                <span className="ml-2 text-xs text-muted-foreground font-mono">datasycon — debate</span>
+          <div className="mt-16 max-w-3xl mx-auto group">
+            <div className="glass-card border-white/10 rounded-2xl overflow-hidden shadow-glow animate-float">
+              <div className="flex items-center gap-2 px-5 py-3.5 bg-secondary/40 border-b border-white/5">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-destructive/40" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/40" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/40" />
+                </div>
+                <span className="ml-4 text-[10px] text-muted-foreground font-mono uppercase tracking-[0.2em] font-bold">CodeBuddy Console — spec_debate.exe</span>
               </div>
               <div className="p-5 text-left font-mono text-sm space-y-3">
                 <p>
@@ -293,17 +296,21 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-10 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-              <Brain size={14} className="text-primary-foreground" />
+      <footer className="border-t border-white/5 py-12 px-4 sm:px-6 bg-secondary/10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-brand-gradient flex items-center justify-center">
+              <Terminal size={18} className="text-primary-foreground" />
             </div>
-            <span className="text-sm font-bold font-mono text-foreground">Datasycon</span>
+            <span className="text-lg font-black tracking-tighter text-foreground">CodeBuddy</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            © 2026 Datasycon. Todos os direitos reservados.
+          <p className="text-xs text-muted-foreground font-medium">
+            © 2026 CodeBuddy Platform. Desenvolvido por <span className="text-primary">Datasycon AI</span>.
           </p>
+          <div className="flex gap-4">
+            <button className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-foreground">Termos</button>
+            <button className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground hover:text-foreground">Privacidade</button>
+          </div>
         </div>
       </footer>
     </div>
