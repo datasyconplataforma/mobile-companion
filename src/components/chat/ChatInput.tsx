@@ -6,6 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface ProjectDocument {
   id: string;
@@ -213,7 +214,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, documents = []
           >
             <Send size={18} className={cn(isLoading && "animate-pulse")} />
           </button>
-        </div>
         </div>
         </div>
 

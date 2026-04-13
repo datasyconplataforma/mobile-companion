@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+type Phase = "config" | "feeding" | "debate" | "prd" | "execution";
+
 interface ProjectTimelineProps {
   projectId: string;
 }
@@ -214,7 +216,7 @@ const ProjectTimeline = ({ projectId }: ProjectTimelineProps) => {
   events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
   // Calculate phase progression
-  const phases = ["config", "feeding", "debate", "prd", "execution"];
+  const phases: Phase[] = ["config", "feeding", "debate", "prd", "execution"];
   const activePhases = new Set(events.map((e) => e.phase));
   const completedPhaseCount = phases.filter((p) => activePhases.has(p)).length;
   const overallProgress = Math.round((completedPhaseCount / phases.length) * 100);

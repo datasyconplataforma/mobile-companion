@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Brain, MessageSquare, GitBranch, FileText, Zap, Shield, CheckCircle2, Star } from "lucide-react";
+import { ArrowRight, Brain, MessageSquare, GitBranch, FileText, Zap, Shield, CheckCircle2, Star, Terminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const features = [
@@ -89,7 +89,6 @@ const Index = () => {
             <span className="text-xl font-black tracking-tighter text-foreground">
               CodeBuddy
             </span>
-          </div>
           </div>
           <div className="flex items-center gap-3">
             <Button

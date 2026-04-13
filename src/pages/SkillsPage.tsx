@@ -339,7 +339,6 @@ const SkillsPage = () => {
               </p>
             </div>
           )}
-        </div>
       </div>
     </div>
   );

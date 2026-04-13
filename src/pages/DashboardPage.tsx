@@ -8,6 +8,7 @@ import {
   Users, Wrench, Search, FileText, CheckSquare, MessageSquare, LayoutGrid, List,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
   planning: "Planejando",
@@ -371,11 +372,11 @@ const DashboardPage = () => {
                         <span>{new Date(project.updated_at).toLocaleDateString("pt-BR")}</span>
                       </div>
                     </button>
+                  </div>
                 );
               })}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import {
   Wrench, RotateCcw, Plug, Pencil, Check, X, ScrollText, Code2,
   History, BrainCircuit, Gavel, FileText,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useToast } from "@/hooks/use-toast";
 import ChatMessage from "@/components/chat/ChatMessage";

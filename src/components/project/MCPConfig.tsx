@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, Plug, ExternalLink } from "lucide-react";
+import { Copy, Check, Plug, ExternalLink, Zap, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const MCPConfig = ({ projectId }: { projectId: string }) => {
@@ -53,7 +53,6 @@ const MCPConfig = ({ projectId }: { projectId: string }) => {
     </button>
   );
 
-  return (
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-8 max-w-4xl mx-auto animate-in fade-in duration-700">
       <div className="flex items-center justify-between border-b border-white/5 pb-6">
@@ -146,7 +145,6 @@ const MCPConfig = ({ projectId }: { projectId: string }) => {
         </p>
       </div>
     </div>
-  );
   );
 };
 

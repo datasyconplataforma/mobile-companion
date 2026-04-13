@@ -7,6 +7,7 @@ import ChatQuestionOptions, { parseQuestionOptions } from "./ChatQuestionOptions
 import { Message } from "@/types/chat";
 import { Bot, User, Trash2, EyeOff, Eye, FileText, Image as ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface ChatMessageProps {
   message: Message;
